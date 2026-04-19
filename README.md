@@ -63,7 +63,7 @@ const markdown = ref('# مرحبا')
 </template>
 ```
 
-The package is workspace-private while the API surface stabilizes. It will go to npm once a second real consumer has validated it.
+Published on npm: [`kurrasah`](https://www.npmjs.com/package/kurrasah). Install with `npm install kurrasah`.
 
 ## Status
 

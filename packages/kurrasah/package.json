@@ -1,9 +1,29 @@
 {
   "name": "kurrasah",
   "version": "0.2.2",
-  "private": true,
   "type": "module",
-  "description": "Reusable Vue 3 + ProseMirror markdown editor with RTL support.",
+  "description": "Reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults.",
+  "keywords": [
+    "editor",
+    "markdown",
+    "vue",
+    "vue3",
+    "prosemirror",
+    "rtl",
+    "arabic",
+    "wysiwyg"
+  ],
+  "homepage": "https://github.com/mohanadkaleia/kurrasah#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohanadkaleia/kurrasah.git",
+    "directory": "packages/kurrasah"
+  },
+  "bugs": {
+    "url": "https://github.com/mohanadkaleia/kurrasah/issues"
+  },
+  "author": "Mohanad Kaleia <ms.kaleia@gmail.com>",
+  "license": "MIT",
   "main": "./dist/kurrasah.js",
   "module": "./dist/kurrasah.js",
   "types": "./types/index.d.ts",
@@ -17,15 +37,16 @@
   },
   "files": [
     "dist",
-    "src",
     "types/index.d.ts",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "vite build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run test && npm run build"
   },
   "dependencies": {
     "markdown-it": "^14"

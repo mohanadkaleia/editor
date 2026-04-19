@@ -89,42 +89,17 @@ export default { components: { Editor } }
         >
           التثبيت
         </h2>
-        <p class="text-text-secondary leading-relaxed mb-3">
-          الحزمة حالياً خاصّة بالمستودع ويتم استهلاكها عبر
-          <span class="font-mono">npm workspaces</span>. النشر على
-          <span class="font-mono">npm</span> لم يتمّ بعد.
-        </p>
         <p class="text-text-secondary leading-relaxed mb-4">
-          داخل هذا المستودع، أضف الحزمة إلى <code class="font-mono">package.json</code>
-          الخاصّ بالمستهلك:
+          الحزمة منشورة على
+          <a
+            href="https://www.npmjs.com/package/kurrasah"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="underline underline-offset-2 hover:text-text-primary"
+          >npm</a>.
+          ثبّتها عبر مدير الحزم المفضّل:
         </p>
 
-        <div class="mb-6">
-          <div
-            class="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-text-secondary bg-surface border border-border border-b-0 rounded-t-lg"
-            dir="ltr"
-          >
-            <i class="fa-regular fa-file-code text-text-secondary"></i>
-            <span>package.json</span>
-          </div>
-          <pre
-            class="!mt-0 !rounded-t-none"
-            dir="ltr"
-          ><code>{
-  "dependencies": {
-    "kurrasah": "*"
-  }
-}</code></pre>
-        </div>
-
-        <p class="text-text-secondary leading-relaxed mb-3">
-          في المستقبل، سيمكن تثبيتها مباشرة من
-          <span class="font-mono">npm</span>
-          <span
-            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono bg-surface border border-border text-text-secondary mx-1"
-            data-testid="docs-soon-badge"
-          >قريباً</span>:
-        </p>
         <div class="mb-2">
           <div
             class="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-text-secondary bg-surface border border-border border-b-0 rounded-t-lg"
