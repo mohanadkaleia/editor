@@ -1,8 +1,33 @@
 # kurrasah
 
+[![npm](https://img.shields.io/npm/v/kurrasah.svg)](https://www.npmjs.com/package/kurrasah)
+[![license](https://img.shields.io/npm/l/kurrasah.svg)](./LICENSE)
+
 A reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults.
 
-The package (`kurrasah`) is the deliverable — backend-agnostic, markdown in and markdown out, zero coupling to any storage layer. This repo also ships a small front-end-only demo that exercises the package end-to-end; it persists a single document in `localStorage`, which is just a stand-in for whatever storage a real consumer brings.
+```bash
+npm install kurrasah
+```
+
+```vue
+<script setup>
+import { ref } from 'vue'
+import { Editor } from 'kurrasah'
+import 'kurrasah/style.css'
+
+const markdown = ref('# مرحبا')
+</script>
+
+<template>
+  <Editor v-model="markdown" dir="rtl" />
+</template>
+```
+
+Full API reference in [`packages/kurrasah/README.md`](./packages/kurrasah/README.md).
+
+---
+
+The package is the deliverable — backend-agnostic, markdown in and markdown out, zero coupling to any storage layer. This repo also ships a small front-end-only demo that exercises the package end-to-end; it persists a single document in `localStorage`, which is just a stand-in for whatever storage a real consumer brings.
 
 ## Highlights
 
@@ -45,25 +70,11 @@ Open `http://localhost:5173`. Package usage docs live at `/docs`.
 
 ## Using the package
 
-See `packages/kurrasah/README.md` for the full API reference — props, events, exposed methods, callback hooks, keyboard shortcuts, input rules, styling hooks. Or run the demo and open `/docs`.
+Props, events, exposed methods, callback hooks, keyboard shortcuts, input rules, and styling hooks are all documented in [`packages/kurrasah/README.md`](./packages/kurrasah/README.md). You can also run the demo locally and open `/docs` for a live reference.
 
-Minimal usage:
+## Publishing
 
-```vue
-<script setup>
-import { ref } from 'vue'
-import { Editor } from 'kurrasah'
-import 'kurrasah/style.css'
-
-const markdown = ref('# مرحبا')
-</script>
-
-<template>
-  <Editor v-model="markdown" dir="rtl" />
-</template>
-```
-
-Published on npm: [`kurrasah`](https://www.npmjs.com/package/kurrasah). Install with `npm install kurrasah`.
+Release checklist for the `kurrasah` package lives in [`PUBLISHING.md`](./PUBLISHING.md).
 
 ## Status
 
