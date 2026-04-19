@@ -86,14 +86,23 @@ void linkAsync
 void imgSync
 void imgAsync
 
-// ---- Emits tuple syntax -------------------------------------------------
-// Exercise the tuple types directly.
-const _updatePayload: EditorEmits['update:modelValue'] = ['# hello']
-const _changePayload: EditorEmits['change'] = ['# world']
-// `ready` payload is an `EditorView` — we don't construct one here, just
-// assert the tuple length is 1.
-type _ReadyArity = EditorEmits['ready']['length']
-const _readyArity: _ReadyArity = 1
+// ---- Emits shape --------------------------------------------------------
+// Each event is a validator function in EmitsOptions form — the shape Vue's
+// DefineComponent generic requires. Type-check the signatures directly.
+const _updateFn: EditorEmits['update:modelValue'] = (md) => {
+  void md
+  return true
+}
+const _changeFn: EditorEmits['change'] = (md) => {
+  void md
+  return true
+}
+// `ready` payload is an EditorView — we just assert the signature shape.
+type _ReadyHandler = EditorEmits['ready']
+const _readyParams: Parameters<_ReadyHandler>['length'] = 1
+void _updateFn
+void _changeFn
+void _readyParams
 
 // ---- Exposed instance methods ------------------------------------------
 declare const instance: EditorInstance
@@ -145,3 +154,38 @@ if (isValidHttpUrl(x)) {
   const narrowed: string = x
   void narrowed
 }
+
+// ---- Consumer-style instance-type flow ---------------------------------
+// These checks replicate what a `<script setup lang="ts">` consumer would
+// write. They verify that the DefineComponent generics wire `EditorInstance`
+// through `InstanceType<typeof Editor>` (template refs) and the emits
+// interface through `instance.$emit`.
+
+// (1) Template-ref shape. Consumer writes:
+//     const editor = ref<InstanceType<typeof Editor> | null>(null)
+//     editor.value?.execCommand('toggleBold')
+type EditorRefShape = InstanceType<typeof Editor>
+declare const editorRef: EditorRefShape | null
+editorRef?.focus()
+const _refMd: string | undefined = editorRef?.getMarkdown()
+editorRef?.setMarkdown('# test')
+const _refOk: boolean | undefined = editorRef?.execCommand('toggleBold')
+const _refView = editorRef?.view
+void _refMd
+void _refOk
+void _refView
+// @ts-expect-error — `wat` is not on the exposed surface.
+editorRef?.wat()
+
+// (2) Emit signature flow. Consumer writes `<Editor @change="(md) => ..." />`;
+// vue-tsc narrows the `md` parameter via the component's emits. We can't
+// simulate the template compiler in a `.ts` file, but we can verify that
+// the emits reach the instance's `$emit`.
+type EmitFn = InstanceType<typeof Editor>['$emit']
+declare const emit: EmitFn
+emit('change', '# hello')
+emit('update:modelValue', '# world')
+// @ts-expect-error — payload must be a string, not a number.
+emit('change', 123)
+// @ts-expect-error — 'unknownEvent' is not declared in EditorEmits.
+emit('unknownEvent')

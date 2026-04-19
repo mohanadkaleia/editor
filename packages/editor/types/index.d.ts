@@ -12,7 +12,7 @@
 //
 // Any new public symbol must be covered here or consumers lose type-checking.
 
-import type { DefineComponent } from 'vue'
+import type { ComponentOptionsMixin, DefineComponent } from 'vue'
 import type { EditorView } from 'prosemirror-view'
 import type { Schema, Node as ProseMirrorNode } from 'prosemirror-model'
 
@@ -33,10 +33,13 @@ export interface LinkRequestContext {
 }
 
 /**
- * Context passed to `onRequestImage`. Empty for now; the field is reserved
- * so we can grow the shape without a breaking change.
+ * Context passed to `onRequestImage`. Empty for now. Typed as a closed
+ * empty object (no fields allowed) rather than `{}` — an open `{}` would
+ * match any non-nullable value in strict mode, weakening the guardrail.
+ * The type may gain fields in a later minor; that will be called out as
+ * a non-breaking addition in the CHANGELOG.
  */
-export interface ImageRequestContext {}
+export type ImageRequestContext = Readonly<Record<string, never>>
 
 /** Object returned from `onRequestLink` to apply a link mark. */
 export interface LinkResult {
@@ -106,20 +109,22 @@ export interface EditorProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Events emitted by `<Editor>`. Expressed in Vue 3's tuple-emits syntax
- * so `<script setup lang="ts">` consumers get precise payload typing.
+ * Events emitted by `<Editor>`, in `EmitsOptions` form — the shape Vue's
+ * `DefineComponent` generic expects. Each entry is an event validator that
+ * declares the payload type. `<script setup lang="ts">` consumers using
+ * `@change="(md) => ..."` get `md` narrowed to `string` via vue-tsc.
  */
-export interface EditorEmits {
+export type EditorEmits = {
   /** Markdown changed — drives v-model. */
-  'update:modelValue': [markdown: string]
+  'update:modelValue': (markdown: string) => boolean
   /** Alias of `update:modelValue` for consumers not using v-model. */
-  change: [markdown: string]
+  change: (markdown: string) => boolean
   /**
    * Fires on initial mount and on every internal view rebuild (e.g. when
    * `images` or `links` props toggle). Consumers that hold long-term view
    * references should re-capture on every emit.
    */
-  ready: [view: EditorView]
+  ready: (view: EditorView) => boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -174,10 +179,20 @@ export interface EditorInstance {
  * The main `<Editor>` component. Consumers in `<script setup lang="ts">`
  * get prop + emit typing automatically; template refs are typed as
  * `EditorInstance | null`.
+ *
+ * The generic positional order matters: Vue's `DefineComponent` places
+ * `RawBindings` (which merges into the public instance type) at position 2
+ * and `EmitsOptions` at position 8. The intermediate slots are filled with
+ * sensible defaults so both emits and exposed methods reach consumers.
  */
 export const Editor: DefineComponent<
   EditorProps,
   EditorInstance,
+  {},
+  {},
+  {},
+  ComponentOptionsMixin,
+  ComponentOptionsMixin,
   EditorEmits
 >
 

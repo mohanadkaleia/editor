@@ -193,6 +193,8 @@ function execCommand(name, ...args) {
   // Async command paths (link/image with a consumer callback) stamp the
   // view so the dispatcher knows to skip the auto-focus. Otherwise the
   // editor steals focus from the consumer's modal the instant it opens.
+  // The flag is read-then-cleared unconditionally so a stale `true` from a
+  // cancelled async command cannot leak into the next `execCommand` call.
   const pendingAsync = view.value._editorCoreAsyncPending === true
   view.value._editorCoreAsyncPending = false
   if (!pendingAsync) view.value.focus()

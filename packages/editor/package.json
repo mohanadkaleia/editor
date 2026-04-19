@@ -1,6 +1,6 @@
 {
   "name": "@editor/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "Reusable Vue 3 + ProseMirror markdown editor with RTL support.",

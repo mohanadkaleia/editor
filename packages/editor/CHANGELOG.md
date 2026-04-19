@@ -9,6 +9,26 @@ Each release lists changes under some of these subsections:
 - **Fixed** — bug fixes.
 - **Notes** — behaviors worth surfacing but not strictly actionable.
 
+## [0.1.2] — 2026-04-18
+
+### Fixed
+- `<Editor>` emits (`update:modelValue`, `change`, `ready`) are now
+  typed for `<script setup lang="ts">` consumers. Previously the types
+  compiled but `@change="(md) => ..."` gave `md` an implicit `any` and
+  `$emit('change', 123)` was not rejected. The `DefineComponent` generic
+  positioning was wrong — emits live at slot 8, not slot 3. Now explicit.
+
+### Changed
+- `ImageRequestContext` changed from `{}` to `Readonly<Record<string, never>>`
+  so consumers cannot accidentally pass non-object values. The type is
+  still empty; this is a tightening, not a field addition.
+
+### Notes
+- `EditorEmits` is now an `EmitsOptions`-shaped type (event name → handler
+  signature). Consumers that imported the old tuple-syntax `EditorEmits`
+  interface to construct payloads directly should use
+  `Parameters<EditorEmits['change']>` instead.
+
 ## [0.1.1] — 2026-04-18
 
 ### Added
