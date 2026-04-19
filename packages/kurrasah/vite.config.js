@@ -7,8 +7,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: fileURLToPath(new URL('./src/index.js', import.meta.url)),
-      name: 'EditorCore',
-      fileName: () => 'editor.js',
+      name: 'Kurrasah',
+      fileName: () => 'kurrasah.js',
       formats: ['es'],
     },
     rollupOptions: {
@@ -27,7 +27,7 @@ export default defineConfig({
       ],
       output: {
         assetFileNames: (asset) => {
-          if (asset.name && asset.name.endsWith('.css')) return 'editor.css'
+          if (asset.name && asset.name.endsWith('.css')) return 'kurrasah.css'
           return asset.name || 'assets/[name]-[hash][extname]'
         },
       },

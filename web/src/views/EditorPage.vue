@@ -18,8 +18,8 @@
  */
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Editor, isValidHttpUrl } from '@editor/core'
-import '@editor/core/style.css'
+import { Editor, isValidHttpUrl } from 'kurrasah'
+import 'kurrasah/style.css'
 
 import FloatingToolbar from '../components/editor/FloatingToolbar.vue'
 import ImportExportDialog from '../components/ui/ImportExportDialog.vue'
@@ -169,7 +169,7 @@ function onEditorReady() {
 
 // --- Link / image UI hooks --------------------------------------------------
 //
-// `@editor/core` defaults to English `window.prompt` strings when no callback
+// `kurrasah` defaults to English `window.prompt` strings when no callback
 // is provided. The demo is Arabic-first, so we localize the prompts here —
 // i18n belongs in the consumer, not in the package. Reuses the package's own
 // URL validator to keep behavior consistent with the default.

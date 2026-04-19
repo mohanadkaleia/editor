@@ -1,6 +1,6 @@
 import { Schema } from 'prosemirror-model'
 
-// ProseMirror schema for @editor/core.
+// ProseMirror schema for kurrasah.
 //
 // v1 nodes:
 //   doc, paragraph, heading (levels 1-3 only), bullet_list, ordered_list,

@@ -1,6 +1,6 @@
 <script setup>
 /**
- * DocsView — static documentation page for the `@editor/core` package.
+ * DocsView — static documentation page for the `kurrasah` package.
  *
  * This is a sibling route to `/`, not another document. It is a
  * consumer-side reference — the editor package itself is untouched.
@@ -15,8 +15,8 @@
  */
 
 import { ref } from 'vue'
-import { Editor } from '@editor/core'
-import '@editor/core/style.css'
+import { Editor } from 'kurrasah'
+import 'kurrasah/style.css'
 
 const GITHUB_URL = 'https://github.com/mohanadkaleia/editor'
 
@@ -26,7 +26,7 @@ const GITHUB_URL = 'https://github.com/mohanadkaleia/editor'
 // (via a harmless placeholder service that returns a small PNG).
 const previewMarkdown = ref(`# مرحباً بك في المحرر
 
-هذا **عرض مباشر** لما يقدّمه \`@editor/core\`. جرّب التمرير والقراءة — كلّ ما تراه هنا مُنتَج بواسطة المحرر نفسه في وضع *القراءة فقط*.
+هذا **عرض مباشر** لما يقدّمه \`kurrasah\`. جرّب التمرير والقراءة — كلّ ما تراه هنا مُنتَج بواسطة المحرر نفسه في وضع *القراءة فقط*.
 
 ## ميزات v1
 
@@ -49,8 +49,8 @@ const previewMarkdown = ref(`# مرحباً بك في المحرر
 
 \`\`\`js
 // كتلة شيفرة — تبقى بالاتجاه LTR.
-import { Editor } from '@editor/core'
-import '@editor/core/style.css'
+import { Editor } from 'kurrasah'
+import 'kurrasah/style.css'
 
 export default { components: { Editor } }
 \`\`\`
@@ -75,7 +75,7 @@ export default { components: { Editor } }
           محرر النصوص — دليل الاستخدام
         </h1>
         <p class="text-text-secondary leading-relaxed">
-          حزمة <code class="font-mono">@editor/core</code> هي محرر نصوص
+          حزمة <code class="font-mono">kurrasah</code> هي محرر نصوص
           قابل لإعادة الاستخدام مبني على Vue 3 وProseMirror، بإعدادات
           RTL افتراضياً. المحرر مستقلّ تماماً عن أي خادم أو تخزين —
           يأخذ Markdown ويُخرج Markdown، لا أكثر.
@@ -112,7 +112,7 @@ export default { components: { Editor } }
             dir="ltr"
           ><code>{
   "dependencies": {
-    "@editor/core": "*"
+    "kurrasah": "*"
   }
 }</code></pre>
         </div>
@@ -136,7 +136,7 @@ export default { components: { Editor } }
           <pre
             class="!mt-0 !rounded-t-none"
             dir="ltr"
-          ><code>npm install @editor/core</code></pre>
+          ><code>npm install kurrasah</code></pre>
         </div>
       </section>
 
@@ -162,8 +162,8 @@ export default { components: { Editor } }
             dir="ltr"
           ><code>&lt;script setup&gt;
 import { ref } from 'vue'
-import { Editor } from '@editor/core'
-import '@editor/core/style.css'
+import { Editor } from 'kurrasah'
+import 'kurrasah/style.css'
 
 const markdown = ref('# مرحبا')
 &lt;/script&gt;

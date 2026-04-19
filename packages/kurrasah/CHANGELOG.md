@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@editor/core` will be documented here.
+All notable changes to `kurrasah` will be documented here.
 
 Each release lists changes under some of these subsections:
 - **Breaking** — consumer must adapt.
@@ -8,6 +8,23 @@ Each release lists changes under some of these subsections:
 - **Changed** — non-breaking behavior changes.
 - **Fixed** — bug fixes.
 - **Notes** — behaviors worth surfacing but not strictly actionable.
+
+## [0.2.0] — 2026-04-19
+
+### Breaking
+- **Package renamed from `@editor/core` to `kurrasah`.** Consumers must
+  update imports: `from '@editor/core'` → `from 'kurrasah'`;
+  `'@editor/core/style.css'` → `'kurrasah/style.css'`;
+  dependency entry `"@editor/core"` → `"kurrasah"`.
+- Build output filenames changed: `dist/editor.js` → `dist/kurrasah.js`,
+  `dist/editor.css` → `dist/kurrasah.css`. The change propagates via
+  the `exports` map; consumers importing via the public entry are not
+  affected.
+
+### Added
+- `./package.json` is now exposed in the `exports` map so consumers can
+  `import pkg from 'kurrasah/package.json'` to read the current version
+  at build time. The demo app uses this to render its version pill.
 
 ## [0.1.2] — 2026-04-18
 

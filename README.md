@@ -2,7 +2,7 @@
 
 A reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults, plus a minimal front-end-only demo that showcases it.
 
-The editor package (`@editor/core`) is the deliverable — backend-agnostic, markdown in and markdown out, zero coupling to any storage layer. The demo app exists to exercise the package end-to-end. It persists a single document in `localStorage`; consumers bring their own persistence.
+The editor package (`kurrasah`) is the deliverable — backend-agnostic, markdown in and markdown out, zero coupling to any storage layer. The demo app exists to exercise the package end-to-end. It persists a single document in `localStorage`; consumers bring their own persistence.
 
 ## Highlights
 
@@ -16,7 +16,7 @@ The editor package (`@editor/core`) is the deliverable — backend-agnostic, mar
 
 ```
 /
-├── packages/editor/      # @editor/core — the reusable package
+├── packages/editor/      # kurrasah — the reusable package
 └── web/                  # Vue 3 demo consumer (single-document, localStorage)
 ```
 
@@ -40,7 +40,7 @@ Open `http://localhost:5173`. Package docs live at `/docs`.
 | Command | What it does |
 |---|---|
 | `npm run dev:web` | Start the demo Vite dev server |
-| `npm run build:editor` | Build `@editor/core` in Vite lib mode |
+| `npm run build:editor` | Build `kurrasah` in Vite lib mode |
 | `npm run test:editor` | Run the package's vitest suite |
 
 ## Using the package in your own app
@@ -52,8 +52,8 @@ Minimal usage:
 ```vue
 <script setup>
 import { ref } from 'vue'
-import { Editor } from '@editor/core'
-import '@editor/core/style.css'
+import { Editor } from 'kurrasah'
+import 'kurrasah/style.css'
 
 const markdown = ref('# مرحبا')
 </script>

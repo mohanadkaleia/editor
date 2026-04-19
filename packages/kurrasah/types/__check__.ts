@@ -1,4 +1,4 @@
-// Type-only verification for @editor/core's hand-written `.d.ts`.
+// Type-only verification for kurrasah's hand-written `.d.ts`.
 //
 // Not part of the build; not published. Run from `packages/editor/`:
 //
@@ -32,7 +32,7 @@ import {
   type EditorEmits,
   type MarkdownIO,
   type BuildSchemaOptions,
-} from '@editor/core'
+} from 'kurrasah'
 
 // ---- Component references ----------------------------------------------
 // Smoke-check that the component exports exist and are non-null.

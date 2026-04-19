@@ -23,7 +23,7 @@
  *     selection-change handler hides the pill.
  *
  * Button set: B, I, inline code, link, H1, H2, H3.
- * Strike is omitted — `@editor/core`'s schema does not define it.
+ * Strike is omitted — `kurrasah`'s schema does not define it.
  */
 
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -54,7 +54,7 @@ const activeMarks = ref({
 })
 
 function getEditorDom() {
-  // `@editor/core` mounts the contenteditable inside `.editor-mount`.
+  // `kurrasah` mounts the contenteditable inside `.editor-mount`.
   return document.querySelector('.editor-canvas .editor-mount')
 }
 

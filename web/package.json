@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@editor/core": "*",
+    "kurrasah": "*",
     "@fortawesome/fontawesome-free": "^7.2.0",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-history": "^1.4.1",

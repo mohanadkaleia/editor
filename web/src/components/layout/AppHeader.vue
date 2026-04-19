@@ -127,8 +127,12 @@ const modifiedText = computed(() => formatRelativeArabic(updatedAt.value))
 
 // --- Constants --------------------------------------------------------------
 
+// Pull the package version straight from the package's own `package.json`
+// so the header can't drift out of sync with the actual shipped artifact.
+import kurrasahPkg from 'kurrasah/package.json'
+
 const APP_NAME = 'محرر'
-const APP_VERSION = 'v0.2'
+const APP_VERSION = `v${kurrasahPkg.version}`
 const GITHUB_URL = 'https://github.com/mohanadkaleia/editor'
 </script>
 

@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repo hosts **`@editor/core`**, a reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults, and a thin front-end-only demo app (`web/`) that exercises the package end-to-end. The editor is the primary deliverable; the demo is a reference consumer. The editor itself is backend-agnostic — markdown in, markdown out.
+This repo hosts **`kurrasah`**, a reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults, and a thin front-end-only demo app (`web/`) that exercises the package end-to-end. The editor is the primary deliverable; the demo is a reference consumer. The editor itself is backend-agnostic — markdown in, markdown out.
 
 ## Architecture
 
 npm-workspaces monorepo with two parts:
 
-- **`packages/editor/`** — `@editor/core`, the reusable Vue 3 + ProseMirror package. **Primary product.** Backend-agnostic; zero fetch, zero storage, zero auth.
+- **`packages/editor/`** — `kurrasah`, the reusable Vue 3 + ProseMirror package. **Primary product.** Backend-agnostic; zero fetch, zero storage, zero auth.
   - `src/Editor.vue` — the public component
   - `src/Toolbar.vue` — optional minimal toolbar
   - `src/schema.js` — ProseMirror schema (paragraph, heading 1–3, lists, blockquote, code_block, hard_break, image; marks: strong, em, link, code)
@@ -20,7 +20,7 @@ npm-workspaces monorepo with two parts:
   - `src/style.css` — prose CSS, logical properties, RTL-safe, scoped under `.editor-root`
   - `test/` — Vitest unit tests (schema, markdown roundtrip, editor, plugins)
   - Built with Vite in lib mode; externalizes `vue` and all `prosemirror-*` so consumers dedup.
-- **`web/`** — Vue 3 + Vite + Tailwind front-end-only demo. **Consumer of `@editor/core`.**
+- **`web/`** — Vue 3 + Vite + Tailwind front-end-only demo. **Consumer of `kurrasah`.**
   - `web/src/views/` — EditorPage (hosts `<Editor>`), DocsView
   - `web/src/lib/storage.js` — single-document `localStorage` wrapper
   - `web/src/composables/useDocument.js` — reactive state + debounced write helper
@@ -35,8 +35,8 @@ npm install                              # Hoists workspace deps (web + packages
 
 npm run dev:web                          # Start Vite dev server (localhost:5173)
 
-npm run test:editor                      # Vitest for @editor/core
-npm run build:editor                     # Vite lib build for @editor/core (outputs to packages/editor/dist/)
+npm run test:editor                      # Vitest for kurrasah
+npm run build:editor                     # Vite lib build for kurrasah (outputs to packages/editor/dist/)
 ```
 
 ## Key Conventions
@@ -46,7 +46,7 @@ npm run build:editor                     # Vite lib build for @editor/core (outp
 - **Black & white aesthetic**: no colors except for semantic feedback (errors/success) and minor neutral grays for code backgrounds and deemphasized text. No brand palette.
 - **Vue 3 Composition API**: `<script setup>` exclusively. Reuse existing composables before creating new ones.
 - **Debouncing is the consumer's job**: the editor emits on every transaction. `web/` debounces its `localStorage` writes (`useDocument.debouncedUpdate`, 500 ms). Real consumers talking to a network should do the same.
-- **Package API stability**: `@editor/core` props/events/methods are a consumer contract. Treat changes as potentially breaking; prefer adding props over changing existing behavior.
+- **Package API stability**: `kurrasah` props/events/methods are a consumer contract. Treat changes as potentially breaking; prefer adding props over changing existing behavior.
 
 ## Agent Workflow
 

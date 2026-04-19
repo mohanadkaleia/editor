@@ -6,7 +6,7 @@ import EditorPage from '../views/EditorPage.vue'
 // document" at mount time (load-or-create).
 //
 // `/docs` is a sibling route to `/` — a static documentation page for
-// the `@editor/core` package. It is intentionally code-split (dynamic
+// the `kurrasah` package. It is intentionally code-split (dynamic
 // import) so the base route's bundle is unaffected when users only
 // visit the editor.
 const routes = [

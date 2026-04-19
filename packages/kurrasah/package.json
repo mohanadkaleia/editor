@@ -1,18 +1,19 @@
 {
-  "name": "@editor/core",
-  "version": "0.1.2",
+  "name": "kurrasah",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Reusable Vue 3 + ProseMirror markdown editor with RTL support.",
-  "main": "./dist/editor.js",
-  "module": "./dist/editor.js",
+  "main": "./dist/kurrasah.js",
+  "module": "./dist/kurrasah.js",
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
-      "import": "./dist/editor.js"
+      "import": "./dist/kurrasah.js"
     },
-    "./style.css": "./dist/editor.css"
+    "./style.css": "./dist/kurrasah.css",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",

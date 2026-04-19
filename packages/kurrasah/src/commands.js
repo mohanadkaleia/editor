@@ -241,7 +241,7 @@ export function toggleLink(schema, href, title) {
           // Don't crash the editor, but surface for debugging. Silent
           // swallowing of callback errors is a debugging nightmare.
           // eslint-disable-next-line no-console
-          console.error('[@editor/core] onRequestLink callback failed:', err)
+          console.error('[kurrasah] onRequestLink callback failed:', err)
         })
       return true
     }
@@ -295,7 +295,7 @@ export function insertImage(schema, url, alt, title) {
         .catch((err) => {
           // Don't crash the editor, but surface for debugging.
           // eslint-disable-next-line no-console
-          console.error('[@editor/core] onRequestImage callback failed:', err)
+          console.error('[kurrasah] onRequestImage callback failed:', err)
         })
       return true
     }

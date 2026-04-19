@@ -1,9 +1,9 @@
-// Hand-written type declarations for @editor/core.
+// Hand-written type declarations for kurrasah.
 //
 // The package ships as JavaScript. These declarations describe the public
 // surface exported from src/index.js so TypeScript consumers get prop,
 // event, callback, and exposed-method typing when they
-// `import { Editor } from '@editor/core'`.
+// `import { Editor } from 'kurrasah'`.
 //
 // Keep this file in sync with:
 //   - src/index.js         — authoritative export list.

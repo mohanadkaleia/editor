@@ -1,5 +1,5 @@
 /*
- * @editor/core styles.
+ * kurrasah styles.
  *
  * All selectors are scoped under `.editor-root` so they can't leak into a
  * consumer's global CSS. Everything directional uses logical properties

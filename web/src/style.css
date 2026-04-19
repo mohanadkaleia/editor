@@ -50,7 +50,7 @@ body {
 
 /*
  * .editor-canvas — consumer-side prose overrides that sit on top of the
- * @editor/core package styles. The package ships sensible monochrome
+ * kurrasah package styles. The package ships sensible monochrome
  * fallbacks scoped under `.editor-root`; here we add the v2 reference's
  * specific typography and inline-code / code-block look.
  *

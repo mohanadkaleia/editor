@@ -1,4 +1,4 @@
-# @editor/core
+# kurrasah
 
 Reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults.
 
@@ -6,7 +6,7 @@ Standalone package — no backend coupling, no fetch, no storage. Takes markdown
 
 ## Install
 
-Within this monorepo, consumed via npm workspaces as `@editor/core`. Outside this repo, not yet published.
+Within this monorepo, consumed via npm workspaces as `kurrasah`. Outside this repo, not yet published.
 
 ## TypeScript
 
@@ -15,8 +15,8 @@ Hand-written type declarations ship in `types/index.d.ts`. Consumers that use Ty
 ## Usage
 
 ```js
-import { Editor } from '@editor/core'
-import '@editor/core/style.css'
+import { Editor } from 'kurrasah'
+import 'kurrasah/style.css'
 ```
 
 ```vue
@@ -97,7 +97,7 @@ To provide localized UI (or a non-blocking dialog), supply `onRequestLink` and/o
 ```
 
 ```js
-import { isValidHttpUrl } from '@editor/core'
+import { isValidHttpUrl } from 'kurrasah'
 
 async function askForLink({ href, text }) {
   // Return null to cancel.
@@ -118,11 +118,11 @@ async function askForImage() {
 
 Callbacks may return a value synchronously or as a Promise. Returning `null` (or resolving to `null`) cancels the command. Invalid `href` / `src` values (anything `isValidHttpUrl` rejects) are dropped silently.
 
-`isValidHttpUrl` is exported from `@editor/core` for consumer-side reuse.
+`isValidHttpUrl` is exported from `kurrasah` for consumer-side reuse.
 
 **`context.href` on mixed selections.** When the selection spans characters that carry the link mark plus characters that don't, `context.href` reflects only the mark at the start of the selection and ignores the rest. Consumers that need to detect mixed-state selections should inspect the full range themselves.
 
-**Callback errors.** Rejections from `onRequestLink` / `onRequestImage` are caught so the editor doesn't crash. They are surfaced via `console.error` with a `[@editor/core]` prefix; check the console if your callback is silently not applying.
+**Callback errors.** Rejections from `onRequestLink` / `onRequestImage` are caught so the editor doesn't crash. They are surfaced via `console.error` with a `[kurrasah]` prefix; check the console if your callback is silently not applying.
 
 ## Styling hooks
 
@@ -148,7 +148,7 @@ A subset of CSS custom properties can be overridden on `.editor-root` (or any an
 
 ## Bundling
 
-`markdown-it` is bundled into the package output (~30 KB gzipped) rather than externalized. This keeps consumer install friction low at the cost of a slightly larger `@editor/core` bundle. If you need to dedupe with your own `markdown-it` instance, open an issue — we'll revisit if it becomes common.
+`markdown-it` is bundled into the package output (~30 KB gzipped) rather than externalized. This keeps consumer install friction low at the cost of a slightly larger `kurrasah` bundle. If you need to dedupe with your own `markdown-it` instance, open an issue — we'll revisit if it becomes common.
 
 The ProseMirror packages (`prosemirror-*`) and Vue are declared as peer dependencies and expected to be provided by the consumer; they are excluded from the output.
 

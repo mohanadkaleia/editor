@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "dev:web": "npm run dev -w web",
-    "build:editor": "npm run build -w @editor/core",
-    "test:editor": "npm run test -w @editor/core"
+    "build:editor": "npm run build -w kurrasah",
+    "test:editor": "npm run test -w kurrasah"
   }
 }
