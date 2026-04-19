@@ -5,6 +5,8 @@
 
 A reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults.
 
+**Live demo**: [mohanadkaleia.github.io/kurrasah](https://mohanadkaleia.github.io/kurrasah/) · **npm**: [`kurrasah`](https://www.npmjs.com/package/kurrasah)
+
 ```bash
 npm install kurrasah
 ```
@@ -34,8 +36,11 @@ The package is the deliverable — backend-agnostic, markdown in and markdown ou
 - **Headless ProseMirror** — not Tiptap. Direct schema + commands, full control.
 - **RTL-first** — `dir="rtl"` by default, logical CSS properties throughout, forced-LTR code blocks.
 - **Markdown is the truth** — documents are stored as markdown strings. No custom AST, no operation log. Uses `prosemirror-markdown` for parse/serialize.
-- **Small surface** — 9 props, 3 events, 4 exposed methods. Hand-written `.d.ts` ships with the package.
-- **v1 content**: paragraph, heading 1–3, bullet/ordered lists, blockquote, code block, hard break, image, plus bold / italic / link / inline code marks.
+- **Small, stable surface** with a hand-written `.d.ts` shipped.
+- **Slash-style block picker** — type `@` at the start of a line (or `Cmd/Ctrl+K`) to open a Notion-style block menu. English **and** Arabic aliases (`@h1` = `@عنوان`). `@` rather than `/` because `/` maps to `ظ` on the Arabic keyboard.
+- **"+" affordance on empty lines** — hover a blank paragraph to surface a `+` button that opens the block picker on that same line.
+- **Click-to-open links** — plain click on a link follows it in a new tab (Medium/Substack-style); `Cmd/Ctrl+click` places the caret inside for editing the anchor text.
+- **Content**: paragraph, heading 1–3, bullet/ordered lists, blockquote, code block, hard break, image; marks: bold, italic, link, inline code.
 
 ## Repository layout
 
@@ -78,8 +83,8 @@ Release checklist for the `kurrasah` package lives in [`PUBLISHING.md`](./PUBLIS
 
 ## Status
 
-- Package: **v0.2.0**, 91 vitest tests passing, TypeScript declarations shipped.
-- Demo app: single-document editor persisted to `localStorage`, with import/export and a floating selection toolbar.
+- Package: **v0.4.1**, 126 vitest tests passing, TypeScript declarations shipped.
+- Demo app: single-document editor persisted to `localStorage`, with import/export, a floating selection toolbar, a slash-style block picker, and a hover-surfaced "+" on empty lines.
 
 ## Architecture notes
 
@@ -89,4 +94,4 @@ Release checklist for the `kurrasah` package lives in [`PUBLISHING.md`](./PUBLIS
 
 ## License
 
-TBD.
+MIT — see [LICENSE](./LICENSE).
