@@ -28,7 +28,7 @@ const previewMarkdown = ref(`# مرحباً بك في المحرر
 
 هذا **عرض مباشر** لما يقدّمه \`kurrasah\`. جرّب التمرير والقراءة — كلّ ما تراه هنا مُنتَج بواسطة المحرر نفسه في وضع *القراءة فقط*.
 
-في وضع التحرير، يمكنك الضغط على \`@\` أو \`Cmd+K\` لفتح قائمة اختيار نوع الكتلة (فقرة، عنوان، قائمة، اقتباس، كتلة شيفرة، صورة).
+في وضع التحرير، يمكنك الضغط على \`@\` أو \`Cmd+K\` لفتح قائمة اختيار نوع الكتلة (فقرة، عنوان، قائمة، اقتباس، كتلة شيفرة، صورة). جرّب كتابة \`@\` في أوّل سطر فارغ لفتح قائمة الكتل.
 
 ## ميزات v1
 
@@ -152,7 +152,7 @@ const markdown = ref('# مرحبا')
       </section>
 
       <!-- 4. Props ---------------------------------------------------- -->
-      <section class="mb-12" data-testid="docs-section-props">
+      <section id="docs-section-props" class="mb-12" data-testid="docs-section-props">
         <h2 class="text-[1.5rem] font-semibold text-text-primary mt-0 mb-3">
           الخصائص (Props)
         </h2>
@@ -208,6 +208,24 @@ const markdown = ref('# مرحبا')
                 <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">boolean | 'minimal'</td>
                 <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">'minimal'</td>
                 <td class="px-4 py-2 border-b border-border">نمط شريط الأدوات المضمَّن</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">slashTrigger</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">string</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">'@'</td>
+                <td class="px-4 py-2 border-b border-border">الحرف الذي يفتح قائمة اختيار نوع الكتلة. افتراضيّاً <span class="font-mono" dir="ltr">@</span> لأن <span class="font-mono" dir="ltr">/</span> يقع على حرف <span class="font-mono">ظ</span> في لوحة المفاتيح العربية.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">slashEnabled</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">boolean</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">true</td>
+                <td class="px-4 py-2 border-b border-border">تفعيل قائمة الكتل. عند <span class="font-mono" dir="ltr">false</span> يعود <span class="font-mono" dir="ltr">Cmd/Ctrl+K</span> إلى أمر الرابط.</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">blockControlsEnabled</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">boolean</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">true</td>
+                <td class="px-4 py-2 border-b border-border">إظهار زر <span class="font-mono" dir="ltr">+</span> عند تمرير المؤشّر فوق فقرة فارغة. راجع <a href="#docs-section-empty-plus" class="underline underline-offset-2 hover:text-accent-hover">زر + للأسطر الفارغة</a>.</td>
               </tr>
               <tr>
                 <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">onRequestLink</td>
@@ -362,8 +380,8 @@ const markdown = ref('# مرحبا')
                 <td class="px-4 py-2 border-b border-border">تبديل الشيفرة السطريّة</td>
               </tr>
               <tr>
-                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">Mod-K</td>
-                <td class="px-4 py-2 border-b border-border">إدراج / إزالة رابط (يسأل عن الـ URL)</td>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">Mod-K (Cmd/Ctrl+K)</td>
+                <td class="px-4 py-2 border-b border-border">حين يكون النصّ محدّداً: تبديل رابط. حين تكون الخلية فارغة: فتح قائمة الكتل (وضع palette) — بديل لإدخال <span class="font-mono" dir="ltr">@</span>.</td>
               </tr>
               <tr>
                 <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">Shift-Ctrl-1 / 2 / 3</td>
@@ -384,6 +402,10 @@ const markdown = ref('# مرحبا')
               <tr>
                 <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">Tab / Shift-Tab</td>
                 <td class="px-4 py-2 border-b border-border">إدخال / إخراج عنصر قائمة</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">Enter (×2) داخل كتلة الشيفرة</td>
+                <td class="px-4 py-2 border-b border-border">الخروج من كتلة الشيفرة وإدراج فقرة جديدة بعدها. <span class="font-mono" dir="ltr">Mod-Enter</span> يخرج فوراً.</td>
               </tr>
               <tr>
                 <td class="px-4 py-2 border-b border-border font-mono" dir="ltr">Mod-Enter</td>
@@ -419,7 +441,92 @@ const markdown = ref('# مرحبا')
         </ul>
       </section>
 
-      <!-- 10. Live preview ------------------------------------------- -->
+      <!-- 10. Slash menu --------------------------------------------- -->
+      <section class="mb-12" data-testid="docs-section-slash-menu">
+        <h2 class="text-[1.5rem] font-semibold text-text-primary mt-0 mb-3">
+          قائمة الكتل (Slash menu)
+        </h2>
+        <p class="text-text-secondary leading-relaxed mb-3">
+          تُفتح القائمة عند كتابة <span class="font-mono" dir="ltr">@</span>
+          في بداية سطر فارغ أو بعد مسافة، أو بالضغط على
+          <span class="font-mono" dir="ltr">Cmd/Ctrl+K</span> والمؤشّر في
+          خلية فارغة. يتحدّث الفلتر مباشرة مع كل حرف تكتبه، ويُغلق الضغط
+          على مسافة القائمة.
+        </p>
+        <p class="text-text-secondary leading-relaxed mb-3">
+          كل عنصر في القائمة يقبل أسماء مستعارة بالإنجليزية والعربية
+          معاً — فـ <span class="font-mono" dir="ltr">@h1</span> يُكافئ
+          <span class="font-mono" dir="ltr">@عنوان</span>، و
+          <span class="font-mono" dir="ltr">@list</span> يُكافئ
+          <span class="font-mono" dir="ltr">@قائمة</span>، وهكذا لسائر
+          الكتل (اقتباس، كتلة شيفرة، صورة…).
+        </p>
+        <p class="text-text-secondary leading-relaxed mb-3">
+          اختير الحرف <span class="font-mono" dir="ltr">@</span> بديلاً
+          عن <span class="font-mono" dir="ltr">/</span> لأنّ الأخير يُنتج
+          <span class="font-mono">ظ</span> على لوحة المفاتيح العربية
+          القياسية، فيتعارض مع الكتابة الطبيعية. أما
+          <span class="font-mono" dir="ltr">@</span> فيقع على الموضع نفسه
+          في التخطيطين (<span class="font-mono" dir="ltr">Shift+2</span>)
+          ولا يَرِد في النثر العربي.
+        </p>
+        <p class="text-text-secondary leading-relaxed">
+          للتخصيص، راجع الخاصيتين
+          <span class="font-mono" dir="ltr">slashTrigger</span> و
+          <span class="font-mono" dir="ltr">slashEnabled</span> في
+          <a href="#docs-section-props" class="underline underline-offset-2 hover:text-accent-hover">جدول الخصائص</a>.
+        </p>
+      </section>
+
+      <!-- 11. Empty-line + button ------------------------------------ -->
+      <section id="docs-section-empty-plus" class="mb-12" data-testid="docs-section-empty-plus">
+        <h2 class="text-[1.5rem] font-semibold text-text-primary mt-0 mb-3">
+          زر + للأسطر الفارغة
+        </h2>
+        <p class="text-text-secondary leading-relaxed mb-3">
+          عند تمرير المؤشّر فوق <strong>فقرة فارغة</strong>، يظهر زر
+          <span class="font-mono" dir="ltr">+</span> صغير على حافة بداية
+          الكتلة — اليمين في
+          <span class="font-mono" dir="ltr">dir="rtl"</span>، واليسار في
+          <span class="font-mono" dir="ltr">dir="ltr"</span>. الضغط عليه
+          يضع المؤشّر داخل الفقرة ويفتح قائمة الكتل في وضع لوحة الأوامر
+          (command palette)، فيتحوّل نوع الكتلة التي فوقها المؤشّر
+          <strong>في مكانها</strong> — دون إدراج سطر جديد.
+        </p>
+        <p class="text-text-secondary leading-relaxed mb-3">
+          الكتل المُعبَّأة (فقرات فيها نصّ، عناوين، قوائم، اقتباسات،
+          كتل شيفرة) لا يظهر عليها الزرّ — للحفاظ على هدوء سطح القراءة.
+        </p>
+        <p class="text-text-secondary leading-relaxed">
+          لإيقاف الزرّ كليّاً مرّر
+          <span class="font-mono" dir="ltr">blockControlsEnabled="false"</span>
+          على <span class="font-mono" dir="ltr">&lt;Editor&gt;</span>.
+        </p>
+      </section>
+
+      <!-- 12. Link click behavior ------------------------------------ -->
+      <section class="mb-12" data-testid="docs-section-link-clicks">
+        <h2 class="text-[1.5rem] font-semibold text-text-primary mt-0 mb-3">
+          سلوك النقر على الروابط
+        </h2>
+        <ul class="list-disc pr-6 text-text-secondary leading-relaxed space-y-1 mb-3">
+          <li>
+            نقرة عادية على الرابط → يُفتح الرابط في تبويب جديد (في
+            وضعَي التحرير والقراءة فقط).
+          </li>
+          <li>
+            <span class="font-mono" dir="ltr">Cmd/Ctrl+click</span> →
+            يضع المؤشّر داخل الرابط لتعديل النصّ المُرتبط به.
+          </li>
+        </ul>
+        <p class="text-text-secondary leading-relaxed">
+          يتوافق هذا السلوك مع ما يتوقّعه المستخدمون من محرّرات مثل
+          Medium وSubstack: النقرة الاعتيادية تعني «تَنَقَّل»، لا
+          «حرِّر».
+        </p>
+      </section>
+
+      <!-- 13. Live preview ------------------------------------------- -->
       <section class="mb-12" data-testid="docs-section-preview">
         <h2 class="text-[1.5rem] font-semibold text-text-primary mt-0 mb-3">
           معاينة مباشرة
@@ -443,7 +550,7 @@ const markdown = ref('# مرحبا')
         </div>
       </section>
 
-      <!-- 11. Links --------------------------------------------------- -->
+      <!-- 14. Links --------------------------------------------------- -->
       <section class="mb-16" data-testid="docs-section-links">
         <h2 class="text-[1.5rem] font-semibold text-text-primary mt-0 mb-3">
           الرابط
