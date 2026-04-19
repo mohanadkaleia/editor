@@ -100,28 +100,6 @@ function createView() {
     attributes: {
       class: 'editor-content',
     },
-    // Intercept link clicks so the editor is useful as a reader too:
-    //   - Readonly doc: any click on an <a> follows it in a new tab.
-    //   - Editable doc: Cmd/Ctrl-click follows; a plain click falls through
-    //     to ProseMirror so the cursor lands inside the link (matches
-    //     Notion / Google Docs). Without this, clicking a link in edit
-    //     mode appears to do nothing.
-    handleDOMEvents: {
-      click(_view, event) {
-        const target = event.target
-        if (!(target instanceof Element)) return false
-        const anchor = target.closest('a[href]')
-        if (!anchor) return false
-        const href = anchor.getAttribute('href')
-        if (!href) return false
-        const shouldNavigate =
-          props.readonly || event.metaKey || event.ctrlKey
-        if (!shouldNavigate) return false
-        event.preventDefault()
-        window.open(href, '_blank', 'noopener,noreferrer')
-        return true
-      },
-    },
     dispatchTransaction(tr) {
       const newState = view.value.state.apply(tr)
       view.value.updateState(newState)
@@ -138,6 +116,15 @@ function createView() {
   // and no explicit value was passed. Using a plain property (rather than
   // plugin state) keeps this transient UI concern out of EditorState.
   syncRequestCallbacks()
+
+  // Link-click handler. Registered directly on the editor's DOM element
+  // so it runs independently of ProseMirror's internal event machinery —
+  // which has been unreliable for anchor clicks inside contenteditable.
+  //
+  //   - Plain click (edit or readonly): follow the link in a new tab.
+  //   - Cmd/Ctrl-click: let PM handle it so the cursor can land inside
+  //     the link for editing the anchor text.
+  view.value.dom.addEventListener('click', onLinkClickCapture, true)
   // Emit on initial mount AND on every rebuild so consumers that toggle
   // `images`/`links` always have a live view reference. Consumers that
   // only care about the first mount can ignore subsequent emits.
@@ -154,8 +141,33 @@ function syncRequestCallbacks() {
   }
 }
 
+function onLinkClickCapture(event) {
+  const target = event.target
+  if (!(target instanceof Element)) return
+  const anchor = target.closest('a[href]')
+  if (!anchor) return
+  const href = anchor.getAttribute('href')
+  if (!href) return
+  // Modifier held — fall through so PM can position the cursor.
+  if (event.metaKey || event.ctrlKey) return
+  event.preventDefault()
+  event.stopPropagation()
+  // Programmatic click on a detached anchor — bypasses any
+  // contenteditable-related suppression and popup blockers that
+  // `window.open` hits in some browser configurations.
+  const nav = document.createElement('a')
+  nav.href = href
+  nav.target = '_blank'
+  nav.rel = 'noopener noreferrer'
+  nav.style.display = 'none'
+  document.body.appendChild(nav)
+  nav.click()
+  document.body.removeChild(nav)
+}
+
 function destroyView() {
   if (view.value) {
+    view.value.dom.removeEventListener('click', onLinkClickCapture, true)
     view.value.destroy()
     view.value = null
   }

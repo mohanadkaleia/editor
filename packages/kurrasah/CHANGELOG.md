@@ -9,6 +9,17 @@ Each release lists changes under some of these subsections:
 - **Fixed** — bug fixes.
 - **Notes** — behaviors worth surfacing but not strictly actionable.
 
+## [0.2.2] — 2026-04-19
+
+### Changed
+- Link-click behavior inverted (follow-up to v0.2.1): a **plain click**
+  on a link now navigates in a new tab whether the editor is readonly
+  or editable. **Cmd/Ctrl+click** falls through to ProseMirror so the
+  cursor lands inside the link when the user needs to edit its text.
+  v0.2.1's Notion/Google-Docs pattern felt hidden; Medium/Substack's
+  click-to-navigate is closer to what users expect.
+- `cursor: pointer` on editor anchors so the clickability is visible.
+
 ## [0.2.1] — 2026-04-19
 
 ### Fixed

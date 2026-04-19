@@ -469,42 +469,52 @@ describe('<Editor> — onRequestImage callback', () => {
 })
 
 describe('<Editor> — link clicks', () => {
-  let openSpy
+  // The handler creates a detached `<a target="_blank">`, appends it,
+  // clicks it, and removes it. We spy on HTMLAnchorElement.prototype.click
+  // so we can assert a navigation attempt without actually navigating
+  // (jsdom can't follow links anyway).
+  let anchorClickSpy
   beforeEach(() => {
-    openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
   })
   afterEach(() => {
-    openSpy.mockRestore()
+    anchorClickSpy.mockRestore()
   })
 
-  it('Cmd+click on a link opens it in a new tab', async () => {
+  function findNavCall() {
+    // Any spy call whose `this` has the right href + target counts.
+    return anchorClickSpy.mock.instances.find(
+      (el) =>
+        el.getAttribute('href') === 'https://example.com' &&
+        el.getAttribute('target') === '_blank'
+    )
+  }
+
+  it('plain click on a link navigates in edit mode', async () => {
     const wrapper = mountEditor({
       modelValue: '[site](https://example.com)',
     })
     await nextTick()
     const anchor = wrapper.find('.editor-content a')
     expect(anchor.exists()).toBe(true)
-    await anchor.trigger('click', { metaKey: true })
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://example.com',
-      '_blank',
-      'noopener,noreferrer'
-    )
+    await anchor.trigger('click')
+    expect(findNavCall()).toBeDefined()
     wrapper.unmount()
   })
 
-  it('plain click on a link does NOT navigate in edit mode', async () => {
+  it('Cmd+click falls through so PM can place the cursor', async () => {
     const wrapper = mountEditor({
       modelValue: '[site](https://example.com)',
     })
     await nextTick()
     const anchor = wrapper.find('.editor-content a')
-    await anchor.trigger('click')
-    expect(openSpy).not.toHaveBeenCalled()
+    await anchor.trigger('click', { metaKey: true })
+    expect(findNavCall()).toBeUndefined()
     wrapper.unmount()
   })
 
-  it('plain click on a link DOES navigate in readonly mode', async () => {
+  it('plain click also navigates in readonly mode', async () => {
     const wrapper = mountEditor({
       modelValue: '[site](https://example.com)',
       readonly: true,
@@ -512,11 +522,7 @@ describe('<Editor> — link clicks', () => {
     await nextTick()
     const anchor = wrapper.find('.editor-content a')
     await anchor.trigger('click')
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://example.com',
-      '_blank',
-      'noopener,noreferrer'
-    )
+    expect(findNavCall()).toBeDefined()
     wrapper.unmount()
   })
 })

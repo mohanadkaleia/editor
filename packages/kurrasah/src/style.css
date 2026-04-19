@@ -185,6 +185,7 @@
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 /* Hard break */
