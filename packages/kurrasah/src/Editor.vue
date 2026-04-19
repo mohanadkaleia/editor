@@ -12,6 +12,7 @@ import { EditorState } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import Toolbar from './Toolbar.vue'
 import SlashMenu from './SlashMenu.vue'
+import BlockControls from './BlockControls.vue'
 import { buildSchema } from './schema.js'
 import { createMarkdownIO } from './markdown.js'
 import { buildPlugins, placeholderKey } from './plugins.js'
@@ -61,6 +62,10 @@ const props = defineProps({
   toolbar: { type: [Boolean, String], default: 'minimal' },
   slashTrigger: { type: String, default: '@' },
   slashEnabled: { type: Boolean, default: true },
+  // Per-block hover controls (drag handle + "+" button). Default on.
+  // Set `false` to disable the overlay entirely — consumers who ship
+  // their own block-level UI or need a keyboard-only surface.
+  blockControlsEnabled: { type: Boolean, default: true },
   onRequestLink: { type: Function, default: null },
   onRequestImage: { type: Function, default: null },
 })
@@ -357,6 +362,13 @@ const showToolbar = computed(
       :view="view"
       :schema="schema"
       :revision="revision"
+    />
+    <BlockControls
+      v-if="blockControlsEnabled"
+      :view="view"
+      :revision="revision"
+      :dir="dir"
+      :enabled="blockControlsEnabled"
     />
   </div>
 </template>

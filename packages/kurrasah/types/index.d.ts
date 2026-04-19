@@ -112,6 +112,13 @@ export interface EditorProps {
    * the view.
    */
   slashEnabled?: boolean
+  /**
+   * Enable per-block hover controls (drag handle + "+" button) on
+   * top-level blocks. Default `true`. Set `false` to disable the
+   * overlay entirely. Keyboard-only users should rely on the slash
+   * menu (`@` trigger or `Cmd/Ctrl+K`) — the overlay is hover-only.
+   */
+  blockControlsEnabled?: boolean
   /** Optional hook for link UI. See `LinkCallback`. */
   onRequestLink?: LinkCallback | null
   /** Optional hook for image UI. See `ImageCallback`. */

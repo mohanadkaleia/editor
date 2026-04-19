@@ -365,3 +365,104 @@
   line-height: 1.3;
   margin-block-start: 0.125rem;
 }
+
+/*
+ * Per-block hover controls.
+ *
+ * Teleported to <body>, so these selectors live OUTSIDE the `.editor-root`
+ * scope. The `.kurrasah-` prefix avoids colliding with consumer styles.
+ *
+ * Positioning exception: `left` / `top` are physical, not logical. The
+ * overlay anchors to viewport-relative coords produced by
+ * `view.coordsAtPos`, which are always physical — logical
+ * `inset-inline-start` would measure from the wrong edge under RTL.
+ * Everything else (padding, margin, gaps) uses logical properties.
+ *
+ * z-index 90 sits comfortably below the slash menu's 1000. The overlay
+ * hides when the menu is open, so they should never overlap, but the
+ * lower value is the safe default if something else in the page forces
+ * a stacking clash.
+ */
+.kurrasah-block-controls {
+  position: fixed;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-block: 0.125rem;
+  padding-inline: 0.125rem;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  pointer-events: auto;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'Noto Sans Arabic',
+    'Cairo',
+    'Tahoma',
+    sans-serif;
+}
+
+.kurrasah-block-controls.is-visible {
+  opacity: 1;
+}
+
+.kurrasah-block-control {
+  appearance: none;
+  background: transparent;
+  color: #111;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  padding: 0;
+  margin: 0;
+  inline-size: 1.375rem; /* ~22px */
+  block-size: 1.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  font: inherit;
+  user-select: none;
+}
+
+.kurrasah-block-control:hover {
+  background: #f3f4f6;
+}
+
+.kurrasah-block-control:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+}
+
+.kurrasah-block-control-drag {
+  cursor: grab;
+}
+
+.kurrasah-block-control-drag:active {
+  cursor: grabbing;
+}
+
+/*
+ * Control glyphs use plain HTML text with `dir="ltr"`. The slash-menu
+ * heading icons hit the same bidi issue — an "H1" span under an RTL
+ * ancestor rendered with mirrored digits / font fallback. Using an
+ * explicit LTR direction on the inner span sidesteps the problem for
+ * the drag dots (⋮⋮) and the plus glyph.
+ */
+.kurrasah-block-control-glyph {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #555;
+}
+
+.kurrasah-block-control:hover .kurrasah-block-control-glyph {
+  color: #111;
+}

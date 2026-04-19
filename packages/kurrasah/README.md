@@ -36,6 +36,7 @@ import 'kurrasah/style.css'
 | `toolbar` | `boolean \| 'minimal'` | `'minimal'` | Toolbar mode |
 | `slashTrigger` | `string` | `'@'` | Trigger character for the slash (block-type) menu. See [Slash command menu](#slash-command-menu). |
 | `slashEnabled` | `boolean` | `true` | Enable the slash menu. |
+| `blockControlsEnabled` | `boolean` | `true` | Enable the hover-shown "+" button on empty paragraphs. See [Per-block hover controls](#per-block-hover-controls). |
 | `onRequestLink` | `(context) => Promise<{href, title?} \| null> \| {href, title?} \| null` | `null` | Optional hook called when the link command needs a URL. Return `null` to cancel. See [Link / image UI hooks](#link--image-ui-hooks). |
 | `onRequestImage` | `(context) => Promise<{src, alt?, title?} \| null> \| {src, alt?, title?} \| null` | `null` | Same, for images. |
 
@@ -137,6 +138,34 @@ Filter matches are case-insensitive substrings against the label + aliases.
   running the command.
 - If the filtered result set is empty, the popover is hidden; it reappears
   as soon as the query changes to match.
+
+## Per-block hover controls
+
+When the user hovers an **empty paragraph**, a small "+" button appears
+on its start-edge — the right side under `dir="rtl"`, the left side
+under `dir="ltr"`. Clicking it inserts an empty paragraph immediately
+below and opens the slash menu's command-palette mode so the user can
+pick a block type (heading, list, quote, code, image, etc.).
+
+Populated blocks (text, headings, lists, quotes, code) don't surface
+the button — keeping the reading surface calm.
+
+### Keyboard-only users
+
+The overlay is hover-only. Keyboard users should use the slash menu —
+type the trigger character (default `@`) at the start of a new line,
+or press `Cmd/Ctrl+K` with an empty selection.
+
+### Disabling
+
+Pass `blockControlsEnabled="false"` on `<Editor>` to turn the overlay
+off. The prop can be toggled live without rebuilding the view.
+
+### Interaction with the slash menu
+
+The overlay hides while the slash menu is open, so the two popovers
+never compete visually. Clicking "+" transfers the focus to the slash
+menu directly — no intermediate state where both are visible.
 
 ## Link / image UI hooks
 

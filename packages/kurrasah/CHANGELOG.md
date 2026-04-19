@@ -9,6 +9,35 @@ Each release lists changes under some of these subsections:
 - **Fixed** — bug fixes.
 - **Notes** — behaviors worth surfacing but not strictly actionable.
 
+## [0.4.0] — 2026-04-19
+
+### Added
+- **Per-block "+" affordance** — hovering an **empty paragraph**
+  surfaces a small "+" button on the block's start-edge (right in RTL,
+  left in LTR). Clicking it inserts an empty paragraph below the
+  hovered one and opens the slash menu in command-palette mode so the
+  user can pick a block type. The button is mouse-hover only;
+  keyboard users should use the slash menu (`@` trigger or
+  `Cmd/Ctrl+K`).
+- New prop `blockControlsEnabled: boolean` (default `true`) — turn the
+  overlay off.
+
+### Notes
+- The overlay only renders on empty paragraphs — populated blocks
+  (text, headings, lists, quotes, code) show nothing, keeping the
+  reading surface calm.
+- The overlay hides automatically while the slash menu is open so the
+  two popovers never compete visually.
+- Hover detection uses a single global `mousemove` listener on
+  `document`, throttled via `requestAnimationFrame`. A short grace
+  period (80 ms) lets the cursor transit the small gap between the
+  block and the button without the overlay vanishing mid-move.
+- An earlier draft of this release included a drag handle for
+  reordering blocks. It was dropped before release: the interaction
+  was not obvious to users and reordering whole blocks isn't a common
+  gesture for the target audience. If reordering becomes a real need,
+  it'll return as a separate feature with a clearer affordance.
+
 ## [0.3.1] — 2026-04-19
 
 ### Fixed
