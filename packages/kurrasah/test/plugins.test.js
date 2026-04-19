@@ -135,6 +135,34 @@ describe('Shift-Enter inserts a hard break', () => {
   })
 })
 
+describe('Enter at end of code block exits after a blank line', () => {
+  it('two consecutive Enters inside a code block exit into a new paragraph', () => {
+    const { view, io, destroy } = makeView('```\nconst x = 1\n```')
+    // Cursor at the end of the code block (after "const x = 1").
+    view.dispatch(
+      view.state.tr.setSelection(TextSelection.atEnd(view.state.doc))
+    )
+
+    // First Enter: inserts a `\n` inside the code block. Content
+    // becomes "const x = 1\n", cursor at the end.
+    fireKey(view, 'Enter')
+    expect(view.state.doc.lastChild.type.name).toBe('code_block')
+    expect(view.state.doc.lastChild.textContent).toBe('const x = 1\n')
+
+    // Second Enter: the trailing `\n` is stripped AND a new paragraph
+    // is appended after the code block. Cursor lands in the paragraph.
+    fireKey(view, 'Enter')
+    const children = []
+    view.state.doc.forEach((child) => children.push(child))
+    expect(children[children.length - 1].type.name).toBe('paragraph')
+    // The code block retained the intended content (no lingering blank).
+    const codeBlock = children[children.length - 2]
+    expect(codeBlock.type.name).toBe('code_block')
+    expect(codeBlock.textContent).toBe('const x = 1')
+    destroy()
+  })
+})
+
 describe('Enter at end of empty list item exits the list', () => {
   it('a second Enter inside an empty bullet item lifts into a paragraph', () => {
     const { view, io, destroy } = makeView('* first item')

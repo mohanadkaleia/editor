@@ -9,6 +9,15 @@ Each release lists changes under some of these subsections:
 - **Fixed** — bug fixes.
 - **Notes** — behaviors worth surfacing but not strictly actionable.
 
+## [0.4.1] — 2026-04-19
+
+### Fixed
+- Double-Enter inside a code block now exits the block into a new
+  paragraph. Previously plain Enter always inserted another `\n` and
+  the user could get stuck inside a code block at the end of the doc
+  with no way to add a following line. `Mod-Enter` still works as the
+  explicit exit shortcut; this is the natural-typing path.
+
 ## [0.4.0] — 2026-04-19
 
 ### Added

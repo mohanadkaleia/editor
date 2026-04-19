@@ -239,16 +239,48 @@ function buildKeymap(schema) {
     )
   }
 
+  // Enter inside a code block: if the cursor is at the end of the block
+  // AND the preceding character is a newline (i.e. the user already hit
+  // Enter once and is about to produce a visually-empty line), remove
+  // that trailing newline and run `exitCode` to drop a paragraph after
+  // the block. Without this the user gets stuck inside the block —
+  // plain Enter only ever inserts another `\n`.
+  function exitCodeBlockOnEmptyLine(state, dispatch, view) {
+    const codeBlockType = schema.nodes.code_block
+    if (!codeBlockType) return false
+    const { $from, empty } = state.selection
+    if (!empty) return false
+    const node = $from.parent
+    if (node.type !== codeBlockType) return false
+    // Must be at the end of the block's content.
+    if ($from.parentOffset !== node.content.size) return false
+    // Must be immediately after a newline (or the code block must be
+    // empty — two Enters from an empty block exits).
+    const text = node.textContent
+    if (text.length > 0 && !text.endsWith('\n')) return false
+    if (!dispatch) return true
+    // If there's a trailing `\n`, drop it before exiting so the code
+    // block doesn't keep an invisible blank line.
+    if (text.endsWith('\n')) {
+      dispatch(state.tr.delete($from.pos - 1, $from.pos))
+      return exitCode(view.state, view.dispatch)
+    }
+    // Empty code block → just exit.
+    return exitCode(state, dispatch)
+  }
+
   // Enter on an empty list item exits the list. `splitListItem` is the
   // canonical ProseMirror command for lists: when the selection is at the
   // end of a non-empty item it inserts a new item; when the item is empty
   // it lifts the item out of the list (exiting the list). It must run
   // before `liftEmptyBlock`/`splitBlock` so the list-exit behaviour wins
-  // over a generic block split.
+  // over a generic block split. The code-block-exit check runs before
+  // `newlineInCode` so double-Enter escapes the block.
   if (schema.nodes.list_item) {
     bind(
       'Enter',
       chainCommands(
+        exitCodeBlockOnEmptyLine,
         newlineInCode,
         createParagraphNear,
         splitListItem(schema.nodes.list_item),
