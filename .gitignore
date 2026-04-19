@@ -41,6 +41,9 @@ Thumbs.db
 artifacts/
 *.sqlite
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 
 # pytest
 .pytest_cache/

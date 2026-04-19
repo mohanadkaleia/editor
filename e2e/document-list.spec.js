@@ -4,39 +4,34 @@ import { test, expect } from '@playwright/test'
 /**
  * Document List E2E Tests
  *
- * Tests for the home view: loading, creating, navigating to, and deleting
- * documents. Targets the REST-backed UI (`useDocuments` + `/api`).
+ * Targets the Notion-shell sidebar: workspace header, scrollable
+ * document list, active state, new-page button, context-menu delete.
  */
 
 test.describe('Document List', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('[data-testid="documents-title"]')
+    // Wait for sidebar to be mounted with its workspace label visible.
+    await page.waitForSelector('[data-testid="app-sidebar"]')
+    await page.waitForSelector('[data-testid="workspace-name"]')
   })
 
-  test('page loads and shows the app title', async ({ page }) => {
-    const appTitle = page.locator('[data-testid="app-title"]')
-    await expect(appTitle).toBeVisible()
-    await expect(appTitle).toHaveText('كُرّاس')
+  test('workspace name is visible in the sidebar', async ({ page }) => {
+    const workspace = page.locator('[data-testid="workspace-name"]')
+    await expect(workspace).toBeVisible()
+    await expect(workspace).toHaveText('كُرّاس')
   })
 
-  test('page shows documents heading', async ({ page }) => {
-    const heading = page.locator('[data-testid="documents-title"]')
-    await expect(heading).toBeVisible()
-    await expect(heading).toHaveText('المستندات')
-  })
-
-  test('new document button is visible', async ({ page }) => {
-    const newBtn = page.locator('[data-testid="new-document-btn"]')
+  test('sidebar new-page button is visible and clickable', async ({ page }) => {
+    const newBtn = page.locator('[data-testid="sidebar-new-document-btn"]')
     await expect(newBtn).toBeVisible()
-    await expect(newBtn).toHaveText('مستند جديد')
+    await expect(newBtn).toContainText('صفحة جديدة')
   })
 
-  test('click new document creates a document and navigates to editor', async ({
+  test('clicking sidebar new-page creates a document and navigates to editor', async ({
     page,
   }) => {
-    const newBtn = page.locator('[data-testid="new-document-btn"]')
-    await newBtn.click()
+    await page.locator('[data-testid="sidebar-new-document-btn"]').click()
 
     await page.waitForURL(/\/editor\/.+/)
     expect(page.url()).toMatch(/\/editor\/.+/)
@@ -44,30 +39,62 @@ test.describe('Document List', () => {
     await expect(page.locator('[data-testid="editor-content"]')).toBeVisible()
   })
 
-  test('navigate back to home shows the created document in the list', async ({
+  test('new document appears in the sidebar list with active state', async ({
     page,
   }) => {
-    const itemsBefore = page.locator('[data-testid="document-item"]')
-    const countBefore = await itemsBefore.count()
+    const before = await page
+      .locator('[data-testid="sidebar-document-item"]')
+      .count()
 
-    await page.locator('[data-testid="new-document-btn"]').click()
+    await page.locator('[data-testid="sidebar-new-document-btn"]').click()
     await page.waitForURL(/\/editor\/.+/)
+    await page.waitForSelector('[data-testid="editor-content"]')
 
-    await page.goto('/')
-    await page.waitForSelector('[data-testid="documents-title"]')
+    // The sidebar should now show one more item, with the latest having
+    // the active-state attribute.
+    const items = page.locator('[data-testid="sidebar-document-item"]')
+    await expect(items).toHaveCount(before + 1, { timeout: 5000 })
 
-    const items = page.locator('[data-testid="document-item"]')
-    await expect(items).toHaveCount(countBefore + 1, { timeout: 5000 })
+    const activeItem = items.filter({ has: page.locator('[data-active="true"]') })
+    // Fallback: the first item with data-active="true" attribute on the row itself.
+    const active = page.locator(
+      '[data-testid="sidebar-document-item"][data-active="true"]',
+    )
+    await expect(active).toHaveCount(1)
+    void activeItem
   })
 
-  test('delete a document removes it from the list', async ({ page }) => {
-    await page.locator('[data-testid="new-document-btn"]').click()
+  test('empty-state home shows when there are no documents (dev may have some)', async ({
+    page,
+  }) => {
+    // Create a doc so the empty state view may not apply on this fresh run.
+    // Instead we assert the empty-state selector exists in the DOM only
+    // when the list is empty. With documents present, the `/` route
+    // auto-redirects to the latest doc.
+    const itemsCount = await page
+      .locator('[data-testid="sidebar-document-item"]')
+      .count()
+    if (itemsCount === 0) {
+      await expect(page.locator('[data-testid="documents-title"]')).toBeVisible()
+      await expect(page.locator('[data-testid="documents-title"]')).toHaveText(
+        'لا توجد مستندات',
+      )
+    } else {
+      // Auto-redirect kicked in; URL should be /editor/:id.
+      await page.waitForURL(/\/editor\/.+/, { timeout: 5000 })
+      expect(page.url()).toMatch(/\/editor\/.+/)
+    }
+  })
+
+  test('delete a document via the sidebar context menu removes it', async ({
+    page,
+  }) => {
+    // Seed: create a fresh doc to guarantee we can delete one.
+    await page.locator('[data-testid="sidebar-new-document-btn"]').click()
     await page.waitForURL(/\/editor\/.+/)
+    await page.waitForSelector('[data-testid="editor-content"]')
 
-    await page.goto('/')
-    await page.waitForSelector('[data-testid="documents-title"]')
-
-    const items = page.locator('[data-testid="document-item"]')
+    const items = page.locator('[data-testid="sidebar-document-item"]')
     const initialCount = await items.count()
     expect(initialCount).toBeGreaterThan(0)
 
@@ -75,10 +102,16 @@ test.describe('Document List', () => {
       await dialog.accept()
     })
 
+    // Hover reveals the inline ellipsis; click it.
     const firstItem = items.first()
     await firstItem.hover()
-    const deleteBtn = firstItem.locator('[data-testid="delete-document-btn"]')
-    await deleteBtn.click()
+    await firstItem
+      .locator('[data-testid="sidebar-item-menu-btn"]')
+      .click()
+
+    // Context menu should be visible with the Delete button.
+    await page.waitForSelector('[data-testid="sidebar-context-menu"]')
+    await page.locator('[data-testid="sidebar-delete-btn"]').click()
 
     await expect(items).toHaveCount(initialCount - 1)
   })

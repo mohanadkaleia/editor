@@ -1,0 +1,229 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+    <script>
+        window.FontAwesomeConfig = {
+          autoReplaceSvg: 'nest'
+        };
+      </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0D1117',
+                            800: '#161B22',
+                            700: '#21262D',
+                            600: '#30363D',
+                        },
+                        accent: {
+                            purple: '#6366F1',
+                            green: '#10B981',
+                            red: '#F43F5E',
+                            orange: '#F97316',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; background-color: #FFFFFF; color: #000000; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
+        .editor-content:empty:before { content: attr(data-placeholder); color: #9CA3AF; pointer-events: none; display: block; }
+        .sidebar-transition { transition: width 0.3s ease, padding 0.3s ease, opacity 0.2s ease; }
+        .sidebar-collapsed { width: 0 !important; padding-left: 0 !important; padding-right: 0 !important; opacity: 0; overflow: hidden; border-left: none !important; }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans overflow-hidden bg-white text-black text-right">
+
+    <!-- Main Workspace -->
+    <div class="flex flex-1 overflow-hidden h-full">
+
+        <!-- Sidebar Navigation -->
+        <aside id="navigation-sidebar" class="w-[280px] bg-[#F7F7F5] border-l border-gray-200 flex flex-col shrink-0 sidebar-transition relative group">
+            <!-- Sidebar Header -->
+            <div class="p-4 flex items-center justify-between hover:bg-gray-200/50 cursor-pointer rounded-md mx-2 mt-2 transition-colors">
+                <div class="flex items-center gap-2">
+                    <div class="w-5 h-5 bg-black text-white rounded flex items-center justify-center text-xs font-bold">V</div>
+                    <span class="text-sm font-semibold text-gray-900">Viso Workspace</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="w-6 h-6 rounded hover:bg-gray-300 flex items-center justify-center text-gray-500">
+                        <i class="fa-solid fa-angles-right text-xs"></i>
+                    </button>
+                    <button class="w-6 h-6 rounded hover:bg-gray-300 flex items-center justify-center text-gray-500">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-2 space-y-0.5 mt-1">
+                <!-- Page Item -->
+                <div class="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-900 bg-gray-200/80 cursor-pointer font-medium">
+                    <i class="fa-regular fa-file-lines w-4 text-center text-gray-500"></i>
+                    <span>وثائق المشروع</span>
+                </div>
+                <div class="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-200/60 cursor-pointer transition-colors">
+                    <i class="fa-regular fa-file-lines w-4 text-center text-gray-400"></i>
+                    <span>إرشادات التصميم</span>
+                </div>
+                <div class="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-200/60 cursor-pointer transition-colors">
+                    <i class="fa-regular fa-file-lines w-4 text-center text-gray-400"></i>
+                    <span>ملاحظات الاجتماع</span>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="p-3 border-t border-gray-200 mt-auto">
+                <div class="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-gray-600 hover:bg-gray-200/60 cursor-pointer transition-colors">
+                    <i class="fa-solid fa-plus w-4 text-center text-gray-400"></i>
+                    <span>صفحة جديدة</span>
+                </div>
+            </div>
+
+            <!-- Floating Toggle Button (visible when collapsed, hidden here but part of logic) -->
+            <button id="sidebar-toggle" class="absolute -left-3 top-4 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors z-10 opacity-0 group-hover:opacity-100">
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+        </aside>
+
+        <!-- Editor Canvas -->
+        <main id="text-canvas" class="flex-1 bg-white flex flex-col relative overflow-hidden">
+
+            <!-- Top Navigation Bar -->
+            <header class="h-12 flex items-center justify-between px-4 shrink-0 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                    <button class="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-gray-400 transition-colors ml-1">
+                        <i class="fa-solid fa-bars text-xs"></i>
+                    </button>
+                    <span class="hover:underline cursor-pointer">Viso Workspace</span>
+                    <span class="text-gray-300">/</span>
+                    <span class="text-gray-900 font-medium">وثائق المشروع</span>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-gray-400">تم التعديل منذ دقيقتين</span>
+                    <button class="text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100 transition-colors">
+                        مشاركة
+                    </button>
+                    <button class="w-8 h-8 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-ellipsis"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Document Content Area -->
+            <div class="flex-1 overflow-y-auto px-8 sm:px-16 md:px-24 lg:px-32 xl:px-48 py-12 w-full max-w-[1200px] mx-auto">
+
+                <!-- Page Title -->
+                <div class="mb-12 group relative">
+                    <!-- Inline Formatting Toolbar (Floating) -->
+                    <div class="absolute -top-12 right-0 z-50 flex items-center gap-1 bg-[#161B22]/90 backdrop-blur-md border border-[#30363D] rounded-lg p-1.5 shadow-lg shadow-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors text-sm font-semibold" title="Heading 1">H1</button>
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors text-sm font-semibold" title="Heading 2">H2</button>
+                        <div class="w-px h-4 bg-[#30363D] mx-1"></div>
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors" title="Bold">
+                            <i class="fa-solid fa-bold text-[13px]"></i>
+                        </button>
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors" title="Italic">
+                            <i class="fa-solid fa-italic text-[13px]"></i>
+                        </button>
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors" title="Strikethrough">
+                            <i class="fa-solid fa-strikethrough text-[13px]"></i>
+                        </button>
+                        <div class="w-px h-4 bg-[#30363D] mx-1"></div>
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors" title="Link">
+                            <i class="fa-solid fa-link text-[13px]"></i>
+                        </button>
+                        <button class="w-7 h-7 flex items-center justify-center rounded hover:bg-[#30363D] text-gray-300 transition-colors" title="Code">
+                            <i class="fa-solid fa-code text-[13px]"></i>
+                        </button>
+                        <!-- Pointer/Arrow -->
+                        <div class="absolute -bottom-1.5 right-1/2 translate-x-1/2 w-3 h-3 bg-[#161B22]/90 border-b border-r border-[#30363D] rotate-45"></div>
+                    </div>
+
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity mb-2 text-sm text-gray-400">
+                        <button class="hover:bg-gray-100 px-2 py-1 rounded flex items-center gap-1"><i class="fa-regular fa-face-smile"></i> إضافة أيقونة</button>
+                        <button class="hover:bg-gray-100 px-2 py-1 rounded flex items-center gap-1"><i class="fa-regular fa-image"></i> إضافة غلاف</button>
+                        <button class="hover:bg-gray-100 px-2 py-1 rounded flex items-center gap-1"><i class="fa-regular fa-comment"></i> إضافة تعليق</button>
+                    </div>
+                    <h1 class="text-5xl font-bold text-gray-900 outline-none leading-tight tracking-tight" contenteditable="true" spellcheck="false">وثائق المشروع</h1>
+                </div>
+
+                <!-- Editor Body -->
+                <div class="text-gray-800 text-base leading-relaxed space-y-4 outline-none editor-content" contenteditable="true" spellcheck="false" data-placeholder="اكتب '/' للأوامر">
+<p class="mb-6">مرحباً بك في الوثائق الرسمية لمنصتنا الجديدة. هذا المساحة تُعد مركزاً مركزيًا لكل المواصفات التقنية، وإرشادات التصميم، وعلامات المشروع.</p>
+
+<h2 class="text-3xl font-bold text-gray-900 mt-10 mb-4 tracking-tight">البدء</h2>
+
+<p class="mb-4">لبدء استخدام المنصة، ستحتاج إلى تثبيت الاعتماديات الأساسية. تأكد من أنك تمتلك نسخة Node.js 18 أو أحدث مثبتة على جهازك المحلي.</p>
+
+<div class="bg-[#F7F7F5] rounded-md p-4 mb-6 font-mono text-sm text-gray-800 border border-gray-200 text-left" dir="ltr">
+npm install @project/core @project/ui
+</div>
+
+<h3 class="text-2xl font-semibold text-gray-900 mt-8 mb-4 tracking-tight">الميزات الرئيسية</h3>
+
+<ul class="list-disc pr-6 mb-6 space-y-2 marker:text-gray-400">
+    <li><strong>التعاون الحقيقي:</strong> اعمل بسلاسة مع أعضاء فريقك من جميع أنحاء العالم.</li>
+    <li><strong>إدارة الحالة المتقدمة:</strong> أدوات مدمجة للتعامل مع حالات تطبيقات معقدة دون الحاجة إلى مكونات مسبقة.</li>
+    <li><em>واجهة مستخدم</em> متجاوبة: مكتبة شاملة من المكونات القابلة للتعديل والقابلة للوصول.</li>
+</ul>
+
+<blockquote class="border-r-4 border-black pr-4 py-1 my-8 text-gray-700 italic text-lg">
+    "هذا الأداة قد تغيرت طريقة عمل فريقنا بالكامل. الواجهة البسيطة مع الميزات القوية تسمح لنا بالتركيز الكامل على المحتوى."
+</blockquote>
+
+<p class="mb-4">للمراجعات التفصيلية للواجهات، يرجى التنقل إلى صفحة <span class="text-gray-500 underline cursor-pointer hover:text-gray-900">وثائق الواجهة</span>.</p>
+
+<p class="text-gray-400 mt-8"></p>
+                </div>
+            </div>
+
+            <!-- Floating Help Button -->
+            <div class="absolute bottom-6 left-6">
+                <button class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all shadow-sm">
+                    <i class="fa-solid fa-question text-xs"></i>
+                </button>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Script to handle sidebar toggle (simulated for UI demonstration) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('navigation-sidebar');
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            const topNavToggle = document.querySelector('header button');
+
+            // Simple toggle logic for visual demonstration
+            if(toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', () => {
+                    sidebar.classList.toggle('sidebar-collapsed');
+                });
+            }
+            if(topNavToggle && sidebar) {
+                topNavToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('sidebar-collapsed');
+                });
+            }
+        });
+    </script>
+
+
+</body></html>

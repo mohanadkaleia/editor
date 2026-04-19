@@ -1,54 +1,71 @@
 <script setup>
 /**
- * EditorPage -- the `/editor/:id` route.
+ * EditorPage — the one and only view.
  *
- * Loads a document over REST, hosts the `@editor/core` Editor, debounces
- * content + title edits back to the server, and exposes a VersionDialog
- * and an ImportExportDialog for import/export round trips.
+ * Hosts:
+ *   - The editable title input.
+ *   - The `<Editor>` with `toolbar={false}`.
+ *   - `<FloatingToolbar>`, `<VersionDialog>`, `<ImportExportDialog>` (x2).
+ *
+ * Document resolution at mount:
+ *   1. `listDocuments()`
+ *   2. If empty → `createDocument({})` and use that.
+ *   3. Otherwise → most recently updated (first item).
+ *
+ * Never creates a second document through the UI. There is no new-
+ * document action.
+ *
+ * Dialog visibility is driven by `useEditorChrome`, which the header's
+ * overflow menu writes to.
  */
 
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Editor } from '@editor/core'
 import '@editor/core/style.css'
 
-import AppLayout from '../components/ui/AppLayout.vue'
+import FloatingToolbar from '../components/editor/FloatingToolbar.vue'
 import ImportExportDialog from '../components/ui/ImportExportDialog.vue'
 import VersionDialog from '../components/editor/VersionDialog.vue'
 import { useDocuments } from '../composables/useDocuments.js'
-
-const route = useRoute()
-const router = useRouter()
+import { useEditorChrome } from '../composables/useEditorChrome.js'
 
 const {
   currentDocument,
   loading,
   error,
   load,
+  loadDocuments,
+  create,
   debouncedUpdate,
   flushUpdate,
 } = useDocuments()
 
-const documentId = computed(() => String(route.params.id))
+const {
+  showVersionDialog,
+  showImportDialog,
+  showExportDialog,
+  updatedAt,
+  documentReady,
+} = useEditorChrome()
 
 // --- Editor state ----------------------------------------------------------
 
-/** Markdown bound to the `<Editor>` v-model. Initialised after load. */
+const documentId = ref(null)
 const content = ref('')
-
-/** Title bound to the <input>. Initialised after load. */
 const title = ref('')
-
-/** Ref to the `<Editor>` component, used for setMarkdown/getMarkdown. */
 const editorRef = ref(null)
-
-/** Guard: we do not echo programmatic updates back through debouncedUpdate. */
+const editorExposed = ref(null)
+/**
+ * True while we're applying programmatic content updates — e.g. the
+ * initial load or a version restore — so the debounced save path does
+ * not round-trip those back to the server.
+ */
 const suppressAutoSave = ref(true)
 
-/** Transient error toast (separate from load error). */
+// --- Transient error toast (separate from persistent `error`) --------------
+
 const toast = ref(null)
 let toastTimer = null
-
 function showToast(message) {
   toast.value = message
   if (toastTimer) clearTimeout(toastTimer)
@@ -58,37 +75,28 @@ function showToast(message) {
   }, 4000)
 }
 
-// --- Dialog open state -----------------------------------------------------
-
-const showVersionDialog = ref(false)
-const showImportDialog = ref(false)
-const showExportDialog = ref(false)
-
-// --- Import/export local state ---------------------------------------------
+// --- Import / Export local state -------------------------------------------
 
 const importText = ref('')
 const exportText = ref('')
 const copySuccess = ref(false)
 
-function openImport() {
-  importText.value = ''
-  showImportDialog.value = true
-}
+watch(showImportDialog, (open) => {
+  if (open) importText.value = ''
+})
 
-function handleImportSubmit() {
-  if (!editorRef.value) return
-  // The editor's update:modelValue will flow through `onContentChange`
-  // and queue a debounced save like any other edit.
-  editorRef.value.setMarkdown(importText.value)
-  showImportDialog.value = false
-}
-
-function openExport() {
+watch(showExportDialog, (open) => {
+  if (!open) return
   exportText.value = editorRef.value
     ? editorRef.value.getMarkdown()
     : content.value
   copySuccess.value = false
-  showExportDialog.value = true
+})
+
+function handleImportSubmit() {
+  if (!editorRef.value) return
+  editorRef.value.setMarkdown(importText.value)
+  showImportDialog.value = false
 }
 
 async function copyExport() {
@@ -103,9 +111,7 @@ async function copyExport() {
 
 function downloadExport() {
   const name = (title.value || 'document').trim() || 'document'
-  const blob = new Blob([exportText.value], {
-    type: 'text/markdown;charset=utf-8',
-  })
+  const blob = new Blob([exportText.value], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
@@ -114,202 +120,186 @@ function downloadExport() {
   URL.revokeObjectURL(url)
 }
 
-// --- Load + watch routes ---------------------------------------------------
+// --- Document resolution ---------------------------------------------------
 
-async function loadDoc(id) {
+/** Pick the most recently updated document from a summary list. */
+function pickMostRecent(list) {
+  const sorted = [...list].sort((a, b) => {
+    const ta = typeof a.updated_at === 'number'
+      ? a.updated_at
+      : Date.parse(a.updated_at) / 1000 || 0
+    const tb = typeof b.updated_at === 'number'
+      ? b.updated_at
+      : Date.parse(b.updated_at) / 1000 || 0
+    return tb - ta
+  })
+  return sorted[0]
+}
+
+async function resolveAndLoad() {
   suppressAutoSave.value = true
+  documentReady.value = false
   try {
-    const doc = await load(id)
-    if (doc) {
-      content.value = doc.content_md || ''
-      title.value = doc.title || ''
+    const list = await loadDocuments()
+    let doc
+    if (!Array.isArray(list) || list.length === 0) {
+      doc = await create({ title: '', content_md: '' })
+    } else {
+      const pick = pickMostRecent(list)
+      doc = await load(pick.id)
     }
+    if (!doc) throw new Error('تعذّر تحميل المستند')
+    documentId.value = doc.id
+    content.value = doc.content_md || ''
+    title.value = doc.title || ''
+    updatedAt.value = doc.updated_at ?? null
+    documentReady.value = true
   } catch (err) {
-    // error ref is already set by the composable; show a toast too.
     showToast(err?.message || 'تعذّر تحميل المستند')
   } finally {
-    // After the state propagates, re-enable auto-save on the next tick.
-    // A microtask is enough here: the v-model watcher fires synchronously
-    // when we assign `content`, so we need to give it a chance to run
-    // before we unsuppress.
+    // Release the save-suppression on the next microtask so the initial
+    // value binding to `<Editor>` doesn't trigger a spurious save.
     queueMicrotask(() => { suppressAutoSave.value = false })
   }
 }
 
-onMounted(() => { loadDoc(documentId.value) })
+/** Surfaced as a data attribute so tests / tooling can wait deterministically. */
+const loaded = computed(() => !!currentDocument.value && !suppressAutoSave.value)
 
-// If the route changes while the component stays mounted (rare but
-// supported), reload.
-watch(documentId, (next, prev) => {
-  if (next && next !== prev) loadDoc(next)
+onMounted(() => {
+  resolveAndLoad()
 })
 
 // --- Edit handlers ---------------------------------------------------------
 
 function onContentChange(md) {
-  if (suppressAutoSave.value) return
-  debouncedUpdate(documentId.value, { content_md: md }).catch((err) => {
-    showToast(err?.message || 'تعذّر حفظ التغييرات')
-  })
+  if (suppressAutoSave.value || !documentId.value) return
+  debouncedUpdate(documentId.value, { content_md: md })
+    .then((doc) => { if (doc?.updated_at != null) updatedAt.value = doc.updated_at })
+    .catch((err) => showToast(err?.message || 'تعذّر حفظ التغييرات'))
 }
 
 function onTitleInput(event) {
   title.value = event.target.value
-  if (suppressAutoSave.value) return
-  debouncedUpdate(documentId.value, { title: title.value }).catch((err) => {
-    showToast(err?.message || 'تعذّر حفظ العنوان')
-  })
+  if (suppressAutoSave.value || !documentId.value) return
+  debouncedUpdate(documentId.value, { title: title.value })
+    .then((doc) => { if (doc?.updated_at != null) updatedAt.value = doc.updated_at })
+    .catch((err) => showToast(err?.message || 'تعذّر حفظ العنوان'))
 }
 
-// After a restore, the composable updates currentDocument; push the new
-// markdown + title into the editor state.
+function onEditorReady() {
+  editorExposed.value = editorRef.value
+}
+
 function onVersionRestored(doc) {
   if (!doc) return
   suppressAutoSave.value = true
   content.value = doc.content_md || ''
   title.value = doc.title || ''
+  updatedAt.value = doc.updated_at ?? null
   if (editorRef.value) editorRef.value.setMarkdown(content.value)
   queueMicrotask(() => { suppressAutoSave.value = false })
 }
 
-// --- Flush on navigation / unmount ----------------------------------------
-
-onBeforeRouteLeave(async () => {
-  // Best-effort flush; ignore errors, they will have toasted already.
-  try { await flushUpdate(documentId.value) } catch { /* already toasted */ }
-})
+// --- Cleanup --------------------------------------------------------------
 
 onBeforeUnmount(() => {
   if (toastTimer) clearTimeout(toastTimer)
-  // Fire-and-forget flush.
-  flushUpdate(documentId.value).catch(() => {})
+  if (documentId.value) flushUpdate(documentId.value).catch(() => {})
+  // Reset chrome state so if the view ever re-mounts, the header
+  // starts cleanly.
+  documentReady.value = false
+  updatedAt.value = null
+  showVersionDialog.value = false
+  showImportDialog.value = false
+  showExportDialog.value = false
 })
-
-function goHome() {
-  router.push({ name: 'home' })
-}
 </script>
 
 <template>
-  <AppLayout>
-    <div class="max-w-3xl mx-auto py-8 px-4" data-testid="editor-page">
-      <!-- Toast -->
-      <div
-        v-if="toast"
-        class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black text-white text-sm px-4 py-2 rounded shadow-lg"
-        role="alert"
-        data-testid="editor-toast"
-      >
-        {{ toast }}
-      </div>
-
-      <!-- Loading skeleton -->
-      <div
-        v-if="loading && !currentDocument"
-        class="text-center py-12 text-gray-500"
-        data-testid="editor-loading"
-      >
-        جاري التحميل...
-      </div>
-
-      <!-- Load error (no doc) -->
-      <div
-        v-else-if="error && !currentDocument"
-        class="text-center py-12"
-        data-testid="editor-error"
-      >
-        <p class="text-red-600 mb-4">
-          {{ error.message || 'تعذّر تحميل المستند' }}
-        </p>
-        <button
-          type="button"
-          @click="loadDoc(documentId)"
-          class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-        >
-          إعادة المحاولة
-        </button>
-      </div>
-
-      <!-- Editor -->
-      <template v-else-if="currentDocument">
-        <!-- Top bar: back + title + actions -->
-        <div
-          class="mb-6 pb-4 border-b border-gray-200"
-          data-testid="editor-top-bar"
-        >
-          <div class="flex items-center gap-3 mb-4">
-            <button
-              type="button"
-              @click="goHome"
-              class="text-gray-400 hover:text-black transition-colors text-lg cursor-pointer"
-              title="العودة للمستندات"
-              aria-label="العودة للمستندات"
-              data-testid="editor-back-btn"
-            >
-              →
-            </button>
-            <input
-              :value="title"
-              @input="onTitleInput"
-              type="text"
-              placeholder="بدون عنوان"
-              class="flex-1 text-xl font-bold outline-none bg-transparent"
-              dir="auto"
-              data-testid="document-title"
-              aria-label="عنوان المستند"
-            />
-          </div>
-
-          <div class="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              @click="showVersionDialog = true"
-              class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-              data-testid="toolbar-versions"
-            >
-              المحفوظات
-            </button>
-            <button
-              type="button"
-              @click="openImport"
-              class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-              data-testid="toolbar-import"
-            >
-              استيراد
-            </button>
-            <button
-              type="button"
-              @click="openExport"
-              class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer"
-              data-testid="toolbar-export"
-            >
-              تصدير
-            </button>
-          </div>
-        </div>
-
-        <!-- Editor host -->
-        <div
-          class="border border-gray-200 rounded"
-          data-testid="editor-content"
-        >
-          <Editor
-            ref="editorRef"
-            v-model="content"
-            :dir="'rtl'"
-            :images="true"
-            :links="true"
-            placeholder="ابدأ الكتابة..."
-            toolbar="minimal"
-            @change="onContentChange"
-          />
-        </div>
-      </template>
+  <main
+    class="flex-1 w-full"
+    data-testid="editor-page"
+  >
+    <!-- Toast -->
+    <div
+      v-if="toast"
+      class="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-accent text-white text-sm px-4 py-2 rounded shadow-lg"
+      role="alert"
+      data-testid="editor-toast"
+    >
+      {{ toast }}
     </div>
+
+    <!-- Loading skeleton (only before the first doc resolves) -->
+    <div
+      v-if="loading && !currentDocument"
+      class="flex items-center justify-center py-24 text-text-secondary"
+      data-testid="editor-loading"
+    >
+      جاري التحميل...
+    </div>
+
+    <!-- Load error (no doc) -->
+    <div
+      v-else-if="error && !currentDocument"
+      class="flex flex-col items-center justify-center gap-4 py-24"
+      data-testid="editor-error"
+    >
+      <p class="text-red-600">
+        {{ error.message || 'تعذّر تحميل المستند' }}
+      </p>
+      <button
+        type="button"
+        @click="resolveAndLoad"
+        class="px-4 py-2 border border-border rounded hover:bg-surface-hover transition-colors cursor-pointer"
+      >
+        إعادة المحاولة
+      </button>
+    </div>
+
+    <!-- Editor surface -->
+    <div
+      v-else-if="currentDocument"
+      class="max-w-3xl mx-auto px-6 py-12 md:py-16 editor-canvas"
+    >
+      <!-- Title -->
+      <input
+        :value="title"
+        @input="onTitleInput"
+        type="text"
+        placeholder="عنوان بلا عنوان"
+        dir="rtl"
+        class="w-full mb-6 text-[2.25rem] leading-tight font-semibold tracking-tight text-text-primary bg-transparent outline-none placeholder:text-gray-300 text-right"
+        data-testid="document-title"
+        aria-label="عنوان المستند"
+      />
+
+      <!-- Editor host (toolbar disabled; FloatingToolbar supplies formatting) -->
+      <div
+        data-testid="editor-content"
+        :data-loaded="loaded ? 'true' : 'false'"
+      >
+        <Editor
+          ref="editorRef"
+          v-model="content"
+          :dir="'rtl'"
+          :images="true"
+          :links="true"
+          placeholder="ابدأ الكتابة..."
+          :toolbar="false"
+          @change="onContentChange"
+          @ready="onEditorReady"
+        />
+      </div>
+    </div>
+
+    <!-- Floating inline formatting toolbar -->
+    <FloatingToolbar v-if="editorExposed" :editor="editorExposed" />
 
     <!-- Version dialog -->
     <VersionDialog
-      v-if="currentDocument"
+      v-if="currentDocument && documentId"
       v-model="showVersionDialog"
       :document-id="documentId"
       @restored="onVersionRestored"
@@ -321,14 +311,14 @@ function goHome() {
       title="استيراد من Markdown"
       @close="showImportDialog = false"
     >
-      <p class="text-sm text-gray-500 mb-3">
+      <p class="text-sm text-text-secondary mb-3">
         الصق محتوى Markdown أدناه. سيتم استبدال محتوى المستند الحالي.
       </p>
       <textarea
         v-model="importText"
         dir="auto"
         placeholder="# العنوان&#10;&#10;محتوى المستند..."
-        class="w-full h-64 p-3 border border-gray-300 rounded font-mono text-sm resize-none outline-none focus:border-black"
+        class="w-full h-64 p-3 border border-border rounded font-mono text-sm resize-none outline-none focus:border-accent"
         data-testid="import-textarea"
       ></textarea>
       <template #actions>
@@ -336,7 +326,7 @@ function goHome() {
           type="button"
           @click="handleImportSubmit"
           :disabled="!importText.trim()"
-          class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           data-testid="import-submit-btn"
         >
           استيراد
@@ -354,14 +344,14 @@ function goHome() {
         :value="exportText"
         readonly
         dir="ltr"
-        class="w-full h-64 p-3 border border-gray-300 rounded font-mono text-sm resize-none outline-none focus:border-black bg-gray-50"
+        class="w-full h-64 p-3 border border-border rounded font-mono text-sm resize-none outline-none focus:border-accent bg-surface"
         data-testid="export-textarea"
       ></textarea>
       <template #actions>
         <button
           type="button"
           @click="copyExport"
-          class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer"
+          class="px-4 py-2 border border-border rounded hover:bg-surface-hover transition-colors cursor-pointer"
           data-testid="export-copy-btn"
         >
           {{ copySuccess ? 'تم النسخ' : 'نسخ' }}
@@ -369,12 +359,12 @@ function goHome() {
         <button
           type="button"
           @click="downloadExport"
-          class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors cursor-pointer"
+          class="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover transition-colors cursor-pointer"
           data-testid="export-download-btn"
         >
           تحميل
         </button>
       </template>
     </ImportExportDialog>
-  </AppLayout>
+  </main>
 </template>

@@ -2,22 +2,23 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * RTL Layout E2E Tests — Phase 4
+ * RTL Layout E2E Tests
  *
- * Verifies the editor and its chrome respect right-to-left layout:
+ * Verifies the Notion-shell UI respects right-to-left layout:
  *   - `<html dir="rtl">` and `<html lang="ar">` on the document root.
- *   - Nav bar items visually ordered RTL.
+ *   - Sidebar visually sits on the right edge of the viewport.
  *   - `<div class="editor-root" dir="rtl">` inside the editor.
- *   - Arabic bullet markers visually sit on the right (logical start).
+ *   - Arabic list markers sit on the right.
  *   - Mixed Arabic + English content roundtrips through markdown.
- *   - Code blocks force `dir="ltr"` even inside an RTL editor.
+ *   - Code blocks force `dir="ltr"` inside an RTL editor.
  */
 
 async function createAndOpenDocument(page) {
   await page.goto('/')
-  await page.waitForSelector('[data-testid="new-document-btn"]')
-  await page.locator('[data-testid="new-document-btn"]').click()
+  await page.waitForSelector('[data-testid="sidebar-new-document-btn"]')
+  await page.locator('[data-testid="sidebar-new-document-btn"]').click()
   await page.waitForURL(/\/editor\/.+/)
+  await page.waitForSelector('[data-testid="editor-content"][data-loaded="true"]')
   await page.waitForSelector('.editor-mount [contenteditable="true"]')
 }
 
@@ -44,30 +45,54 @@ async function getMarkdown(page) {
   })
 }
 
+async function execEditorCommand(page, name, ...args) {
+  return page.evaluate(
+    ({ name, args }) => {
+      const root = document.querySelector('.editor-root')
+      if (!root) return false
+      // @ts-ignore
+      let instance = root.__vueParentComponent
+      while (instance) {
+        const exposed = instance.exposed
+        if (exposed && typeof exposed.execCommand === 'function') {
+          return exposed.execCommand(name, ...args)
+        }
+        instance = instance.parent
+      }
+      return false
+    },
+    { name, args },
+  )
+}
+
 test.describe('RTL Layout', () => {
   test('html element has dir="rtl" and lang="ar"', async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('[data-testid="app-title"]')
+    await page.waitForSelector('[data-testid="app-sidebar"]')
 
     const html = page.locator('html')
     await expect(html).toHaveAttribute('dir', 'rtl')
     await expect(html).toHaveAttribute('lang', 'ar')
   })
 
-  test('navigation bar is visually RTL', async ({ page }) => {
+  test('sidebar sits visually on the right of the viewport', async ({
+    page,
+  }) => {
     await page.goto('/')
-    await page.waitForSelector('[data-testid="navbar"]')
+    await page.waitForSelector('[data-testid="app-sidebar"]')
 
-    const titleBox = await page
-      .locator('[data-testid="app-title"]')
+    const sidebarBox = await page
+      .locator('[data-testid="app-sidebar"]')
       .boundingBox()
-    const subtitleBox = await page
-      .locator('[data-testid="app-subtitle"]')
+    const mainBox = await page
+      .locator('[data-testid="app-main"]')
       .boundingBox()
 
-    expect(titleBox).toBeTruthy()
-    expect(subtitleBox).toBeTruthy()
-    expect(titleBox.x).toBeGreaterThan(subtitleBox.x)
+    expect(sidebarBox).toBeTruthy()
+    expect(mainBox).toBeTruthy()
+    // Sidebar's x should be greater than main's x because it is on the
+    // right edge of the viewport in RTL.
+    expect(sidebarBox.x).toBeGreaterThan(mainBox.x)
   })
 
   test('editor root has dir="rtl"', async ({ page }) => {
@@ -81,28 +106,21 @@ test.describe('RTL Layout', () => {
     expect(direction).toBe('rtl')
   })
 
-  test('Arabic bullet list markers sit visually on the right', async ({ page }) => {
+  test('Arabic bullet list markers sit visually on the right', async ({
+    page,
+  }) => {
     await createAndOpenDocument(page)
 
     const editable = await focusEditor(page)
-    await page
-      .locator('.editor-toolbar [aria-label="Bullet list"]')
-      .click()
+    await execEditorCommand(page, 'toggleBulletList')
     await editable.pressSequentially('نقطة أولى')
 
-    // In RTL, the bullet marker (rendered by ::marker or via padding-inline-start
-    // CSS) should appear to the right of the li's text content. We assert
-    // this by checking that the li's right edge is greater than (or equal
-    // to) the text's right edge and that the li's left edge is less than
-    // the text's left edge — i.e. the marker box sits on the right side
-    // of the line.
     const li = page.locator('.editor-mount ul li').first()
     await expect(li).toBeVisible()
 
     const liBox = await li.boundingBox()
     expect(liBox).toBeTruthy()
 
-    // Sanity: computed direction on the list is rtl.
     const ulDirection = await page
       .locator('.editor-mount ul')
       .first()
@@ -133,8 +151,6 @@ test.describe('RTL Layout', () => {
     }, mixed)
 
     const md = await getMarkdown(page)
-    // The serializer may add or strip the trailing newline; assert the
-    // essential content is intact.
     expect(md).toContain('عنوان Mixed Heading')
     expect(md).toContain('هذه فقرة with some English')
   })
@@ -144,9 +160,6 @@ test.describe('RTL Layout', () => {
   }) => {
     await createAndOpenDocument(page)
 
-    // The placeholder decoration attaches a `data-placeholder` attribute to
-    // the empty first paragraph. We assert the attribute exists and carries
-    // the Arabic placeholder the EditorPage passes to @editor/core.
     const placeholderHost = page.locator('.editor-mount [data-placeholder]')
     await expect(placeholderHost).toBeVisible()
     await expect(placeholderHost).toHaveAttribute(
@@ -154,8 +167,6 @@ test.describe('RTL Layout', () => {
       'ابدأ الكتابة...',
     )
 
-    // Type a character — the placeholder decoration drops off because the
-    // paragraph is no longer empty.
     const editable = await focusEditor(page)
     await editable.pressSequentially('ا')
     await expect(
@@ -167,13 +178,12 @@ test.describe('RTL Layout', () => {
     await createAndOpenDocument(page)
 
     const editable = await focusEditor(page)
-    await page.locator('.editor-toolbar [aria-label="Code block"]').click()
+    await execEditorCommand(page, 'toggleCodeBlock')
     await editable.pressSequentially('console.log("hi")')
 
     const pre = page.locator('.editor-mount pre').first()
     await expect(pre).toBeVisible()
 
-    // The package forces dir="ltr" on <pre> through style.css.
     const direction = await pre.evaluate(
       (el) => window.getComputedStyle(el).direction,
     )
@@ -181,24 +191,33 @@ test.describe('RTL Layout', () => {
   })
 
   test('captures screenshots for visual verification', async ({ page }) => {
-    // Empty home page.
+    // 1. Empty-state home (only present if there are no docs; if any
+    // exist the home route redirects, in which case this captures the
+    // latest-doc editor view instead — still useful as a screenshot).
     await page.goto('/')
-    await page.waitForSelector('[data-testid="documents-title"]')
+    await page.waitForSelector('[data-testid="app-sidebar"]')
+    // Either home-empty or editor-page; wait for whichever lands.
+    await page.waitForFunction(() => {
+      return (
+        document.querySelector('[data-testid="home-empty"]') ||
+        document.querySelector('[data-testid="editor-page"]')
+      )
+    })
     await page.screenshot({
-      path: 'artifacts/playwright/screenshots/phase4-home-empty.png',
+      path: 'artifacts/playwright/screenshots/shell-landing.png',
       fullPage: true,
     })
 
-    // Create a document with rich content.
-    await page.locator('[data-testid="new-document-btn"]').click()
-    await page.waitForURL(/\/editor\/.+/)
+    // 2. Create a document and seed rich content.
+    if (!(await page.locator('[data-testid="editor-page"]').isVisible())) {
+      await page.locator('[data-testid="sidebar-new-document-btn"]').click()
+      await page.waitForURL(/\/editor\/.+/)
+    }
     await page.waitForSelector('.editor-mount [contenteditable="true"]')
 
-    // Set a title.
     const titleInput = page.locator('[data-testid="document-title"]')
     await titleInput.fill('مستند تجريبي')
 
-    // Seed rich markdown.
     await page.evaluate(() => {
       const root = document.querySelector('.editor-root')
       if (!root) return
@@ -220,81 +239,72 @@ test.describe('RTL Layout', () => {
         instance = instance.parent
       }
     })
-
-    // Give the editor a moment to render.
     await page.waitForTimeout(200)
-
     await page.screenshot({
-      path: 'artifacts/playwright/screenshots/phase4-editor-mixed.png',
+      path: 'artifacts/playwright/screenshots/shell-editor-content.png',
       fullPage: true,
     })
 
-    // Navigate home (content should be in list).
-    await page.goto('/')
-    await page.waitForSelector('[data-testid="documents-title"]')
-    await expect(
-      page.locator('[data-testid="document-item"]').first(),
-    ).toBeVisible()
+    // 3. Sidebar with docs: take a screenshot showing the sidebar list.
     await page.screenshot({
-      path: 'artifacts/playwright/screenshots/phase4-home-with-docs.png',
+      path: 'artifacts/playwright/screenshots/shell-sidebar-with-docs.png',
       fullPage: true,
     })
 
-    // Re-open editor and open version dialog for the screenshot.
-    await page.locator('[data-testid="document-item"]').first().click()
-    await page.waitForSelector('.editor-mount [contenteditable="true"]')
-    await page.locator('[data-testid="toolbar-versions"]').click()
-    await expect(page.locator('[data-testid="dialog-content"]')).toBeVisible()
+    // 4. Top-nav overflow menu open + version dialog.
+    await page.locator('[data-testid="topnav-menu-btn"]').click()
+    await page.waitForSelector('[data-testid="topnav-menu-versions"]')
     await page.screenshot({
-      path: 'artifacts/playwright/screenshots/phase4-version-dialog.png',
+      path: 'artifacts/playwright/screenshots/shell-topnav-menu.png',
+      fullPage: true,
+    })
+    await page.locator('[data-testid="topnav-menu-versions"]').click()
+    await page.waitForSelector('[data-testid="dialog-content"]')
+    await page.screenshot({
+      path: 'artifacts/playwright/screenshots/shell-version-dialog.png',
       fullPage: true,
     })
   })
 
-  test('Phase 5 polish screenshots', async ({ page }) => {
-    // 1. Empty editor — shows the Arabic placeholder.
+  test('collapsed sidebar: hamburger toggles and persists', async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('[data-testid="new-document-btn"]')
-    await page.locator('[data-testid="new-document-btn"]').click()
-    await page.waitForURL(/\/editor\/.+/)
-    await page.waitForSelector('.editor-mount [contenteditable="true"]')
-    await page.waitForTimeout(150)
+    await page.waitForSelector('[data-testid="app-sidebar"]')
+
+    // Depending on state: if `/` auto-redirects to editor, the hamburger
+    // is in the editor topnav. If empty-state, the hamburger is in the
+    // home topnav. Either way the selector is the same.
+    await page.waitForSelector('[data-testid="topnav-hamburger"]')
+
+    // Capture the uncollapsed width.
+    const widthBefore = await page
+      .locator('[data-testid="app-sidebar"]')
+      .evaluate((el) => el.getBoundingClientRect().width)
+    expect(widthBefore).toBeGreaterThan(0)
+
+    // Collapse.
+    await page.locator('[data-testid="topnav-hamburger"]').click()
+    await page.waitForTimeout(400) // transition duration
+
+    const widthAfter = await page
+      .locator('[data-testid="app-sidebar"]')
+      .evaluate((el) => el.getBoundingClientRect().width)
+    expect(widthAfter).toBe(0)
+
     await page.screenshot({
-      path: 'artifacts/playwright/screenshots/phase5-placeholder-empty.png',
+      path: 'artifacts/playwright/screenshots/shell-sidebar-collapsed.png',
       fullPage: true,
     })
 
-    // 2. Polished prose pass — rich markdown showing tuned headings,
-    // paragraph rhythm, list indent, blockquote, code block LTR.
-    await page.evaluate(() => {
-      const root = document.querySelector('.editor-root')
-      if (!root) return
-      // @ts-ignore
-      let instance = root.__vueParentComponent
-      while (instance) {
-        const exposed = instance.exposed
-        if (exposed && typeof exposed.setMarkdown === 'function') {
-          exposed.setMarkdown(
-            '# عنوان رئيسي\n\n' +
-              '## عنوان فرعي\n\n' +
-              '### عنوان من المستوى الثالث\n\n' +
-              'فقرة قصيرة للتحقق من الإيقاع العمودي ومسافة الأسطر ' +
-              '`inline code` داخل نص عادي و **نص غامق** و *مائل* ' +
-              'و [رابط مثال](https://example.com) مختلط مع English.\n\n' +
-              '* عنصر أول\n* عنصر ثاني\n* third item\n\n' +
-              '1. واحد\n2. اثنان\n3. ثلاثة\n\n' +
-              '> اقتباس قصير للتحقق من الحدّ الجانبي المنطقي ومحاذاته.\n\n' +
-              '```\nconst x = 1\nconsole.log("hi", x)\n```\n',
-          )
-          return
-        }
-        instance = instance.parent
-      }
-    })
-    await page.waitForTimeout(200)
-    await page.screenshot({
-      path: 'artifacts/playwright/screenshots/phase5-prose-polish.png',
-      fullPage: true,
-    })
+    // Reload: collapsed state should survive via localStorage.
+    await page.reload()
+    await page.waitForSelector('[data-testid="app-sidebar"]', { state: 'attached' })
+    const widthAfterReload = await page
+      .locator('[data-testid="app-sidebar"]')
+      .evaluate((el) => el.getBoundingClientRect().width)
+    expect(widthAfterReload).toBe(0)
+
+    // Restore for subsequent tests.
+    await page.locator('[data-testid="topnav-hamburger"]').click()
+    await page.waitForTimeout(400)
   })
 })

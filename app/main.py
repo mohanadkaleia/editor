@@ -36,7 +36,7 @@ def _is_debug() -> bool:
     return os.environ.get("FLASK_DEBUG", "false").lower() == "true"
 
 
-def create_app(db_path: str = "db/kurras.db") -> Flask:
+def create_app(db_path: str = "db/editor.db") -> Flask:
     """
     Create and configure the Flask application.
 

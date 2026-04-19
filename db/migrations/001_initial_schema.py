@@ -1,5 +1,5 @@
 """
-Initial database schema for the Kurras editor.
+Initial database schema for the editor demo app.
 
 Creates three tables:
 - documents: stores document AST snapshots as JSON

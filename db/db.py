@@ -1,5 +1,5 @@
 """
-Database manager for the Kurras editor.
+Database manager for the editor demo app.
 
 Wraps SQLite with WAL journal mode, foreign key enforcement, and a simple
 migration system. All queries must use parameterized placeholders (?).
@@ -20,7 +20,7 @@ from typing import Optional
 class DatabaseManager:
     """SQLite database manager with parameterized queries and thread-safe writes."""
 
-    def __init__(self, db_path: str = "db/kurras.db"):
+    def __init__(self, db_path: str = "db/editor.db"):
         self.db_path = db_path
         self._write_lock = threading.Lock()
         db_dir = os.path.dirname(db_path)
