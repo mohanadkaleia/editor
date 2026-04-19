@@ -18,7 +18,7 @@ import { ref } from 'vue'
 import { Editor } from 'kurrasah'
 import 'kurrasah/style.css'
 
-const GITHUB_URL = 'https://github.com/mohanadkaleia/editor'
+const GITHUB_URL = 'https://github.com/mohanadkaleia/kurrasah'
 
 // Preset markdown for the readonly live preview. Exercises every v1
 // construct: h1/h2/h3, paragraph with bold / italic / link / inline
@@ -39,7 +39,7 @@ const previewMarkdown = ref(`# مرحباً بك في المحرر
 
 ### أمثلة سريعة
 
-نصّ مع **عريض** و *مائل* ورابط إلى [مستودع المشروع](https://github.com/mohanadkaleia/editor) وكذلك \`شيفرة سطريّة\` داخل الفقرة.
+نصّ مع **عريض** و *مائل* ورابط إلى [مستودع المشروع](https://github.com/mohanadkaleia/kurrasah) وكذلك \`شيفرة سطريّة\` داخل الفقرة.
 
 1. العنصر الأول
 2. العنصر الثاني

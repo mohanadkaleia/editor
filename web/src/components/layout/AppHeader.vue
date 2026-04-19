@@ -133,7 +133,7 @@ import kurrasahPkg from 'kurrasah/package.json'
 
 const APP_NAME = 'محرر'
 const APP_VERSION = `v${kurrasahPkg.version}`
-const GITHUB_URL = 'https://github.com/mohanadkaleia/editor'
+const GITHUB_URL = 'https://github.com/mohanadkaleia/kurrasah'
 </script>
 
 <template>

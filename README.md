@@ -27,7 +27,7 @@ Monorepo via npm workspaces.
 Prereqs: Node 18+.
 
 ```bash
-git clone https://github.com/mohanadkaleia/editor.git
+git clone https://github.com/mohanadkaleia/kurrasah.git
 cd editor
 npm install
 npm run dev:web
