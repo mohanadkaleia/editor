@@ -1,8 +1,8 @@
 # editor
 
-A reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults, plus a minimal demo app that showcases it.
+A reusable Vue 3 + ProseMirror markdown editor with RTL-first defaults, plus a minimal front-end-only demo that showcases it.
 
-The editor package (`@editor/core`) is the deliverable — backend-agnostic, markdown in and markdown out, zero coupling to any storage layer. The demo app exists to exercise the package end-to-end; it will eventually be replaced by Kurras (a separate Arabic publishing platform) as the real consumer.
+The editor package (`@editor/core`) is the deliverable — backend-agnostic, markdown in and markdown out, zero coupling to any storage layer. The demo app exists to exercise the package end-to-end. It persists a single document in `localStorage`; consumers bring their own persistence.
 
 ## Highlights
 
@@ -17,28 +17,20 @@ The editor package (`@editor/core`) is the deliverable — backend-agnostic, mar
 ```
 /
 ├── packages/editor/      # @editor/core — the reusable package
-├── web/                  # Vue 3 demo consumer (single-document surface)
-├── app/                  # Flask REST backend (demo storage)
-└── db/                   # SQLite + migrations
+└── web/                  # Vue 3 demo consumer (single-document, localStorage)
 ```
 
 Monorepo via npm workspaces.
 
 ## Quick start
 
-Prereqs: Node 18+, Python 3.13+, macOS or Linux.
+Prereqs: Node 18+.
 
 ```bash
-# clone + install
 git clone https://github.com/mohanadkaleia/editor.git
 cd editor
 npm install
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# run (two terminals)
-npm run dev:api      # Flask on :5000
-npm run dev:web      # Vite on :5173
+npm run dev:web
 ```
 
 Open `http://localhost:5173`. Package docs live at `/docs`.
@@ -48,10 +40,8 @@ Open `http://localhost:5173`. Package docs live at `/docs`.
 | Command | What it does |
 |---|---|
 | `npm run dev:web` | Start the demo Vite dev server |
-| `npm run dev:api` | Start the Flask backend |
 | `npm run build:editor` | Build `@editor/core` in Vite lib mode |
 | `npm run test:editor` | Run the package's vitest suite |
-| `python -m pytest app/tests/ -v` | Backend tests |
 
 ## Using the package in your own app
 
@@ -73,18 +63,17 @@ const markdown = ref('# مرحبا')
 </template>
 ```
 
-The package is currently workspace-private. When it stabilizes around a second real consumer (Kurras), it will be published to npm.
+The package is currently workspace-private. When it stabilizes around a second real consumer, it will be published to npm.
 
 ## Status
 
-- Package: v0.1.0, 91 vitest tests passing.
-- Backend: 8 REST endpoints, 63 pytest tests passing, bandit clean.
-- Demo app: single-document editor surface with versions, import/export, floating toolbar.
+- Package: v0.1.2, 91 vitest tests passing.
+- Demo app: single-document editor surface persisted to `localStorage`, with import/export and floating toolbar.
 
 ## Architecture notes
 
-- The package is **backend-agnostic**. It does not fetch, persist, or authenticate. All of that belongs in the consumer. Storage in the demo is Flask + SQLite; for Kurras it will be something else.
-- The consumer is responsible for **debouncing** writes. The package emits `update:modelValue` on every transaction — do not connect that directly to a PATCH request.
+- The package is **backend-agnostic**. It does not fetch, persist, or authenticate. All of that belongs in the consumer. The demo persists to `localStorage`; real consumers will use their own storage (a REST/GraphQL API, IndexedDB, a CRDT, whatever fits).
+- The consumer is responsible for **debouncing** writes. The package emits `update:modelValue` on every transaction — do not wire that directly to a persistence call. The demo debounces its `localStorage` writes at 500 ms.
 - Styling is **scoped to `.editor-root`** in the package. Consumers can override prose styles via a wrapper class (the demo uses `.editor-canvas`).
 
 ## License

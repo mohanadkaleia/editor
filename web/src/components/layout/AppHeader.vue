@@ -15,9 +15,9 @@
  *     clicking either returns the user to the editor.
  *
  * The overflow menu opens a small popover (Teleported into <body>) with
- * three actions: versions / import / export. Each action flips a flag
- * on `useEditorChrome`, which the editor view observes and uses to
- * open the corresponding dialog — the header itself never renders any
+ * two actions: import / export. Each action flips a flag on
+ * `useEditorChrome`, which the editor view observes and uses to open
+ * the corresponding dialog — the header itself never renders any
  * dialogs.
  */
 
@@ -26,7 +26,7 @@ import { useRoute } from 'vue-router'
 import { formatRelativeArabic } from '../../composables/useRelativeTime.js'
 import { useEditorChrome } from '../../composables/useEditorChrome.js'
 
-const { showVersionDialog, showImportDialog, showExportDialog, updatedAt, documentReady } =
+const { showImportDialog, showExportDialog, updatedAt, documentReady } =
   useEditorChrome()
 
 const route = useRoute()
@@ -112,10 +112,6 @@ onBeforeUnmount(() => {
 
 // --- Actions ----------------------------------------------------------------
 
-function openVersions() {
-  showVersionDialog.value = true
-  closeMenu()
-}
 function openImport() {
   showImportDialog.value = true
   closeMenu()
@@ -234,16 +230,6 @@ const GITHUB_URL = 'https://github.com/mohanadkaleia/editor'
         dir="rtl"
         data-testid="app-overflow-menu"
       >
-        <button
-          type="button"
-          role="menuitem"
-          class="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-primary hover:bg-surface-hover transition-colors cursor-pointer text-right"
-          data-testid="menu-versions"
-          @click="openVersions"
-        >
-          <i class="fa-solid fa-clock-rotate-left w-4 text-text-secondary"></i>
-          <span>المحفوظات</span>
-        </button>
         <button
           type="button"
           role="menuitem"

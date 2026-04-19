@@ -5,15 +5,13 @@
  * Hosts:
  *   - The editable title input.
  *   - The `<Editor>` with `toolbar={false}`.
- *   - `<FloatingToolbar>`, `<VersionDialog>`, `<ImportExportDialog>` (x2).
+ *   - `<FloatingToolbar>` and `<ImportExportDialog>` (x2).
  *
  * Document resolution at mount:
- *   1. `listDocuments()`
- *   2. If empty → `createDocument({})` and use that.
- *   3. Otherwise → most recently updated (first item).
- *
- * Never creates a second document through the UI. There is no new-
- * document action.
+ *   `useDocument().load()` reads the single record from localStorage
+ *   (or seeds an empty shape if none exists). No lists, no versions,
+ *   no ids. The first real edit writes the record back via
+ *   `debouncedUpdate`.
  *
  * Dialog visibility is driven by `useEditorChrome`, which the header's
  * overflow menu writes to.
@@ -25,44 +23,28 @@ import '@editor/core/style.css'
 
 import FloatingToolbar from '../components/editor/FloatingToolbar.vue'
 import ImportExportDialog from '../components/ui/ImportExportDialog.vue'
-import VersionDialog from '../components/editor/VersionDialog.vue'
-import { useDocuments } from '../composables/useDocuments.js'
+import { useDocument } from '../composables/useDocument.js'
 import { useEditorChrome } from '../composables/useEditorChrome.js'
 
-const {
-  currentDocument,
-  loading,
-  error,
-  load,
-  loadDocuments,
-  create,
-  debouncedUpdate,
-  flushUpdate,
-} = useDocuments()
+const { document: doc, ready, load, debouncedUpdate, flushUpdate } = useDocument()
 
-const {
-  showVersionDialog,
-  showImportDialog,
-  showExportDialog,
-  updatedAt,
-  documentReady,
-} = useEditorChrome()
+const { showImportDialog, showExportDialog, updatedAt, documentReady } =
+  useEditorChrome()
 
 // --- Editor state ----------------------------------------------------------
 
-const documentId = ref(null)
 const content = ref('')
 const title = ref('')
 const editorRef = ref(null)
 const editorExposed = ref(null)
 /**
  * True while we're applying programmatic content updates — e.g. the
- * initial load or a version restore — so the debounced save path does
- * not round-trip those back to the server.
+ * initial load or an import — so the debounced save path does not
+ * round-trip those back to localStorage.
  */
 const suppressAutoSave = ref(true)
 
-// --- Transient error toast (separate from persistent `error`) --------------
+// --- Transient error toast -------------------------------------------------
 
 const toast = ref(null)
 let toastTimer = null
@@ -95,8 +77,24 @@ watch(showExportDialog, (open) => {
 
 function handleImportSubmit() {
   if (!editorRef.value) return
+  // Same pattern as a load: pause autosave, set content, then release
+  // on the next microtask so the programmatic setMarkdown doesn't
+  // immediately round-trip to localStorage. The user's next edit
+  // will persist it.
+  suppressAutoSave.value = true
   editorRef.value.setMarkdown(importText.value)
+  content.value = importText.value
   showImportDialog.value = false
+  // Persist immediately so a quick reload after "import" doesn't lose
+  // the imported content.
+  debouncedUpdate({ content_md: importText.value }, { delayMs: 0 })
+    .then((saved) => {
+      if (saved?.updated_at != null) updatedAt.value = saved.updated_at
+    })
+    .catch((err) => showToast(err?.message || 'تعذّر حفظ التغييرات'))
+    .finally(() => {
+      queueMicrotask(() => { suppressAutoSave.value = false })
+    })
 }
 
 async function copyExport() {
@@ -113,7 +111,7 @@ function downloadExport() {
   const name = (title.value || 'document').trim() || 'document'
   const blob = new Blob([exportText.value], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
+  const anchor = window.document.createElement('a')
   anchor.href = url
   anchor.download = `${name}.md`
   anchor.click()
@@ -122,68 +120,46 @@ function downloadExport() {
 
 // --- Document resolution ---------------------------------------------------
 
-/** Pick the most recently updated document from a summary list. */
-function pickMostRecent(list) {
-  const sorted = [...list].sort((a, b) => {
-    const ta = typeof a.updated_at === 'number'
-      ? a.updated_at
-      : Date.parse(a.updated_at) / 1000 || 0
-    const tb = typeof b.updated_at === 'number'
-      ? b.updated_at
-      : Date.parse(b.updated_at) / 1000 || 0
-    return tb - ta
-  })
-  return sorted[0]
-}
-
-async function resolveAndLoad() {
+function hydrateFromDocument() {
   suppressAutoSave.value = true
   documentReady.value = false
   try {
-    const list = await loadDocuments()
-    let doc
-    if (!Array.isArray(list) || list.length === 0) {
-      doc = await create({ title: '', content_md: '' })
-    } else {
-      const pick = pickMostRecent(list)
-      doc = await load(pick.id)
-    }
-    if (!doc) throw new Error('تعذّر تحميل المستند')
-    documentId.value = doc.id
-    content.value = doc.content_md || ''
-    title.value = doc.title || ''
-    updatedAt.value = doc.updated_at ?? null
+    const record = load()
+    if (!record) throw new Error('تعذّر تحميل المستند')
+    content.value = record.content_md || ''
+    title.value = record.title || ''
+    updatedAt.value = record.updated_at ?? null
     documentReady.value = true
   } catch (err) {
     showToast(err?.message || 'تعذّر تحميل المستند')
   } finally {
-    // Release the save-suppression on the next microtask so the initial
-    // value binding to `<Editor>` doesn't trigger a spurious save.
+    // Release autosave on the next microtask so the initial binding to
+    // `<Editor>` doesn't trigger a spurious save.
     queueMicrotask(() => { suppressAutoSave.value = false })
   }
 }
 
-/** Surfaced as a data attribute so tests / tooling can wait deterministically. */
-const loaded = computed(() => !!currentDocument.value && !suppressAutoSave.value)
+/** Surfaced as a data attribute so dev/tooling can wait deterministically. */
+const loaded = computed(() => ready.value && !suppressAutoSave.value)
 
 onMounted(() => {
-  resolveAndLoad()
+  hydrateFromDocument()
 })
 
 // --- Edit handlers ---------------------------------------------------------
 
 function onContentChange(md) {
-  if (suppressAutoSave.value || !documentId.value) return
-  debouncedUpdate(documentId.value, { content_md: md })
-    .then((doc) => { if (doc?.updated_at != null) updatedAt.value = doc.updated_at })
+  if (suppressAutoSave.value) return
+  debouncedUpdate({ content_md: md })
+    .then((saved) => { if (saved?.updated_at != null) updatedAt.value = saved.updated_at })
     .catch((err) => showToast(err?.message || 'تعذّر حفظ التغييرات'))
 }
 
 function onTitleInput(event) {
   title.value = event.target.value
-  if (suppressAutoSave.value || !documentId.value) return
-  debouncedUpdate(documentId.value, { title: title.value })
-    .then((doc) => { if (doc?.updated_at != null) updatedAt.value = doc.updated_at })
+  if (suppressAutoSave.value) return
+  debouncedUpdate({ title: title.value })
+    .then((saved) => { if (saved?.updated_at != null) updatedAt.value = saved.updated_at })
     .catch((err) => showToast(err?.message || 'تعذّر حفظ العنوان'))
 }
 
@@ -194,9 +170,9 @@ function onEditorReady() {
 // --- Link / image UI hooks --------------------------------------------------
 //
 // `@editor/core` defaults to English `window.prompt` strings when no callback
-// is provided. Kurras is an Arabic-first product, so we localize the prompts
-// here — i18n belongs in the consumer, not in the package. Reuses the
-// package's own URL validator to keep behavior consistent with the default.
+// is provided. The demo is Arabic-first, so we localize the prompts here —
+// i18n belongs in the consumer, not in the package. Reuses the package's own
+// URL validator to keep behavior consistent with the default.
 
 function promptArabicHttpUrl(message) {
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -224,26 +200,17 @@ function onRequestImage() {
   return { src, alt }
 }
 
-function onVersionRestored(doc) {
-  if (!doc) return
-  suppressAutoSave.value = true
-  content.value = doc.content_md || ''
-  title.value = doc.title || ''
-  updatedAt.value = doc.updated_at ?? null
-  if (editorRef.value) editorRef.value.setMarkdown(content.value)
-  queueMicrotask(() => { suppressAutoSave.value = false })
-}
-
 // --- Cleanup --------------------------------------------------------------
 
 onBeforeUnmount(() => {
   if (toastTimer) clearTimeout(toastTimer)
-  if (documentId.value) flushUpdate(documentId.value).catch(() => {})
+  // Best-effort: write any pending debounced edit so a rapid navigation
+  // or reload doesn't lose the last keystroke.
+  try { flushUpdate() } catch { /* swallow — we're unmounting */ }
   // Reset chrome state so if the view ever re-mounts, the header
   // starts cleanly.
   documentReady.value = false
   updatedAt.value = null
-  showVersionDialog.value = false
   showImportDialog.value = false
   showExportDialog.value = false
 })
@@ -266,34 +233,16 @@ onBeforeUnmount(() => {
 
     <!-- Loading skeleton (only before the first doc resolves) -->
     <div
-      v-if="loading && !currentDocument"
+      v-if="!ready"
       class="flex items-center justify-center py-24 text-text-secondary"
       data-testid="editor-loading"
     >
       جاري التحميل...
     </div>
 
-    <!-- Load error (no doc) -->
-    <div
-      v-else-if="error && !currentDocument"
-      class="flex flex-col items-center justify-center gap-4 py-24"
-      data-testid="editor-error"
-    >
-      <p class="text-red-600">
-        {{ error.message || 'تعذّر تحميل المستند' }}
-      </p>
-      <button
-        type="button"
-        @click="resolveAndLoad"
-        class="px-4 py-2 border border-border rounded hover:bg-surface-hover transition-colors cursor-pointer"
-      >
-        إعادة المحاولة
-      </button>
-    </div>
-
     <!-- Editor surface -->
     <div
-      v-else-if="currentDocument"
+      v-else-if="doc"
       class="max-w-3xl mx-auto px-6 py-12 md:py-16 editor-canvas"
     >
       <!-- Title -->
@@ -331,14 +280,6 @@ onBeforeUnmount(() => {
 
     <!-- Floating inline formatting toolbar -->
     <FloatingToolbar v-if="editorExposed" :editor="editorExposed" />
-
-    <!-- Version dialog -->
-    <VersionDialog
-      v-if="currentDocument && documentId"
-      v-model="showVersionDialog"
-      :document-id="documentId"
-      @restored="onVersionRestored"
-    />
 
     <!-- Import dialog -->
     <ImportExportDialog

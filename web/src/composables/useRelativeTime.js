@@ -1,14 +1,18 @@
 /**
  * useRelativeTime — tiny Arabic relative-time formatter.
  *
- * The backend returns `updated_at` as epoch seconds. We render a short
- * "تم التعديل ..." string for the top nav. Deliberately minimal; we
- * only need the granularities that appear in daily use.
+ * `updated_at` is a JS epoch-millis number (what `Date.now()` returns),
+ * written by `lib/storage.js`. We render a short "تم التعديل ..."
+ * string for the top nav. Deliberately minimal; we only need the
+ * granularities that appear in daily use. Still accepts a parseable
+ * date string as a fallback so the helper is useful outside the one
+ * call site we have today.
  */
 
 /**
- * Format an epoch-seconds timestamp as a short Arabic relative phrase.
- * Returns an empty string when the input is not a finite number.
+ * Format an epoch-milliseconds timestamp as a short Arabic relative
+ * phrase. Returns an empty string when the input is missing or
+ * unparseable.
  *
  * Examples:
  *   now       -> "تم التعديل الآن"
@@ -20,7 +24,9 @@
  */
 export function formatRelativeArabic(timestamp) {
   if (timestamp === null || timestamp === undefined) return ''
-  const ms = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp)
+  // Numbers are treated as epoch-millis (Date.now()). Strings go through
+  // Date.parse for robustness, which also yields millis.
+  const ms = typeof timestamp === 'number' ? timestamp : Date.parse(timestamp)
   const date = new Date(ms)
   if (Number.isNaN(date.getTime())) return ''
 

@@ -6,10 +6,9 @@
  * and the editor view lives inside `<router-view />`, they need a
  * way to exchange a couple of pieces of state:
  *
- *   - "Open versions dialog" / "open import" / "open export" — these
- *     are triggered from the header's overflow menu, but the dialog
- *     components are owned by the editor view (which has the document
- *     id and the editor ref).
+ *   - "Open import" / "open export" — triggered from the header's
+ *     overflow menu, but the dialog components are owned by the
+ *     editor view (which has the editor ref).
  *   - "Most recent updated_at" — the header shows "modified X ago",
  *     but the timestamp lives on the document loaded by the editor
  *     view.
@@ -23,21 +22,19 @@
 import { ref } from 'vue'
 
 // Module-scoped reactive state. Imported by both AppHeader and EditorPage.
-const showVersionDialog = ref(false)
 const showImportDialog = ref(false)
 const showExportDialog = ref(false)
 
-/** Epoch seconds — last-modified timestamp shown in the header. */
+/** Epoch milliseconds — last-modified timestamp shown in the header. */
 const updatedAt = ref(null)
 
 /** True once the editor has resolved "the document" and is ready to
- *  receive overflow-menu actions. Before this, the header should not
- *  surface doc-specific controls. */
+ *  surface overflow-menu actions. Before this, the header should not
+ *  expose doc-specific controls. */
 const documentReady = ref(false)
 
 export function useEditorChrome() {
   return {
-    showVersionDialog,
     showImportDialog,
     showExportDialog,
     updatedAt,
